@@ -1,0 +1,109 @@
+package httpapi
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
+	"log"
+	"net/http"
+	"time"
+)
+
+type ctxKey string
+
+const (
+	requestIDHeader = "X-Request-ID"
+	requestIDKey    = ctxKey("request_id")
+	requestTimeout  = 15 * time.Second
+)
+
+func chain(h http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		h = middlewares[i](h)
+	}
+	return h
+}
+
+func requestIDMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID := r.Header.Get(requestIDHeader)
+		if requestID == "" {
+			requestID = newRequestID()
+		}
+		w.Header().Set(requestIDHeader, requestID)
+		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func recoveryMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				log.Printf("panic recovered request_id=%s method=%s path=%s", requestIDFromContext(r.Context()), r.Method, r.URL.Path)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(map[string]string{
+					"code":       "internal_error",
+					"message":    "internal server error",
+					"request_id": requestIDFromContext(r.Context()),
+				})
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+func timeoutMiddleware(next http.Handler) http.Handler {
+	return http.TimeoutHandler(next, requestTimeout, `{"code":"request_timeout","message":"request timed out"}`+"\n")
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		started := time.Now()
+		rec := &statusRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(rec, r)
+		log.Printf(
+			"http_request request_id=%s method=%s path=%s status=%d duration_ms=%d bytes=%d",
+			requestIDFromContext(r.Context()),
+			r.Method,
+			r.URL.Path,
+			rec.statusCode,
+			time.Since(started).Milliseconds(),
+			rec.bytesWritten,
+		)
+	})
+}
+
+func requestIDFromContext(ctx context.Context) string {
+	if value, ok := ctx.Value(requestIDKey).(string); ok {
+		return value
+	}
+	return ""
+}
+
+func newRequestID() string {
+	buf := make([]byte, 12)
+	if _, err := rand.Read(buf); err != nil {
+		return time.Now().UTC().Format("20060102150405.000000000")
+	}
+	return hex.EncodeToString(buf)
+}
+
+type statusRecorder struct {
+	http.ResponseWriter
+	statusCode   int
+	bytesWritten int
+}
+
+func (r *statusRecorder) WriteHeader(statusCode int) {
+	r.statusCode = statusCode
+	r.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (r *statusRecorder) Write(p []byte) (int, error) {
+	n, err := r.ResponseWriter.Write(p)
+	r.bytesWritten += n
+	return n, err
+}
