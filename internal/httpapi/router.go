@@ -9,7 +9,14 @@ import (
 func NewHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthHandler)
-	return mux
+
+	return chain(
+		mux,
+		requestIDMiddleware,
+		recoveryMiddleware,
+		timeoutMiddleware,
+		loggingMiddleware,
+	)
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {

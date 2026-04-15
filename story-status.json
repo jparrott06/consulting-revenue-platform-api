@@ -22,21 +22,21 @@
     },
     {
       "story_id": "A-03",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/a-03-db-and-migrations",
-      "pr_url": null,
-      "last_updated": "2026-04-15T13:30:15Z",
-      "notes": "Implemented Postgres connectivity check, migration runner command, and migration SQL scaffold."
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/3",
+      "last_updated": "2026-04-15T13:33:20Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "A-04",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
+      "status": "in_review",
+      "owner": "codex-agent",
+      "branch": "feat/a-04-http-middleware",
       "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "last_updated": "2026-04-15T13:33:20Z",
+      "notes": "Implemented request ID, recovery, timeout, and structured request logging middleware."
     },
     {
       "story_id": "A-05",
