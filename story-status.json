@@ -4,21 +4,21 @@
   "statuses": [
     {
       "story_id": "A-01",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/a-01-project-skeleton",
-      "pr_url": null,
-      "last_updated": "2026-04-15T07:33:06Z",
-      "notes": "A-01 implemented with initial Go module, API bootstrap, health endpoint, config loader, and Make targets. PR opening."
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/1",
+      "last_updated": "2026-04-15T13:11:29Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "A-02",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
+      "status": "in_review",
+      "owner": "codex-agent",
+      "branch": "feat/a-02-config-contract",
       "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "last_updated": "2026-04-15T13:11:29Z",
+      "notes": "Implemented typed environment contract and production required-variable validation with tests."
     },
     {
       "story_id": "A-03",
