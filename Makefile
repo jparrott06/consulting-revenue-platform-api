@@ -16,7 +16,7 @@ build:
 	go build ./...
 
 migrate-up:
-	@echo "No migrations configured yet."
+	go run ./cmd/migrate -direction up
 
 migrate-down:
-	@echo "No migrations configured yet."
+	go run ./cmd/migrate -direction down

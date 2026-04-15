@@ -8,11 +8,20 @@ import (
 	"net/http"
 
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/db"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/httpapi"
 )
 
 // Run starts the HTTP server and blocks until context cancellation.
 func Run(ctx context.Context, cfg config.Config) error {
+	if cfg.DatabaseURL != "" {
+		conn, err := db.OpenPostgres(ctx, cfg.DatabaseURL)
+		if err != nil {
+			return fmt.Errorf("database connectivity check failed: %w", err)
+		}
+		defer conn.Close()
+	}
+
 	srv := &http.Server{
 		Addr:         cfg.HTTP.Addr,
 		Handler:      httpapi.NewHandler(),
