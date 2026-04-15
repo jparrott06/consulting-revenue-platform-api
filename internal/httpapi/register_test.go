@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 )
 
 func TestRegisterWithoutDatabaseReturns503(t *testing.T) {
@@ -14,7 +16,7 @@ func TestRegisterWithoutDatabaseReturns503(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 
-	NewHandler(nil).ServeHTTP(rec, req)
+	NewHandler(config.Config{}, nil).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Fatalf("expected 503, got %d body=%s", rec.Code, rec.Body.String())

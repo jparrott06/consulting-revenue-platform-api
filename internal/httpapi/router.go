@@ -3,13 +3,19 @@ package httpapi
 import (
 	"database/sql"
 	"net/http"
+
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 )
 
 // NewHandler returns the root HTTP router for the API.
-func NewHandler(db *sql.DB) http.Handler {
+func NewHandler(cfg config.Config, db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
+	login, refresh, logout := authHandlers(cfg, db)
 	mux.HandleFunc("GET /healthz", healthHandler)
 	mux.HandleFunc("POST /auth/register", registerHandler(db))
+	mux.HandleFunc("POST /auth/login", login)
+	mux.HandleFunc("POST /auth/refresh", refresh)
+	mux.HandleFunc("POST /auth/logout", logout)
 
 	return chain(
 		mux,
