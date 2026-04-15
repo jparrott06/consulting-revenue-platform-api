@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/authz"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 )
 
@@ -16,6 +17,9 @@ func NewHandler(cfg config.Config, db *sql.DB) http.Handler {
 	mux.HandleFunc("POST /auth/login", login)
 	mux.HandleFunc("POST /auth/refresh", refresh)
 	mux.HandleFunc("POST /auth/logout", logout)
+
+	mux.Handle("GET /v1/me", requireTenantAuth(cfg, db, requireRole(authz.ActionContextRead, http.HandlerFunc(meHandler))))
+	mux.Handle("GET /v1/admin/ping", requireTenantAuth(cfg, db, requireRole(authz.ActionAdminOps, http.HandlerFunc(adminPingHandler))))
 
 	return chain(
 		mux,
