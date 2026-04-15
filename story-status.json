@@ -4,12 +4,12 @@
   "statuses": [
     {
       "story_id": "A-01",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
+      "status": "in_review",
+      "owner": "codex-agent",
+      "branch": "feat/a-01-project-skeleton",
       "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "last_updated": "2026-04-15T07:33:06Z",
+      "notes": "A-01 implemented with initial Go module, API bootstrap, health endpoint, config loader, and Make targets. PR opening."
     },
     {
       "story_id": "A-02",
