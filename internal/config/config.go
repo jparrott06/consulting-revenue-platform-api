@@ -3,16 +3,26 @@ package config
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
 const (
+	defaultEnvironment     = "local"
 	defaultHTTPAddr        = ":8080"
 	defaultReadTimeoutSec  = 10
 	defaultWriteTimeoutSec = 10
 	defaultIdleTimeoutSec  = 60
 )
+
+var validEnvironments = map[string]struct{}{
+	"local":       {},
+	"development": {},
+	"staging":     {},
+	"production":  {},
+}
 
 // HTTPConfig controls network binding and server timeout behavior.
 type HTTPConfig struct {
@@ -25,11 +35,20 @@ type HTTPConfig struct {
 
 // Config is the root app configuration.
 type Config struct {
-	HTTP HTTPConfig
+	Environment         string
+	DatabaseURL         string
+	JWTSigningKey       string
+	StripeWebhookSecret string
+	HTTP                HTTPConfig
 }
 
 // Load returns configuration from env vars with safe defaults for local dev.
 func Load() (Config, error) {
+	environment := stringFromEnv("APP_ENV", defaultEnvironment)
+	if !isValidEnvironment(environment) {
+		return Config{}, fmt.Errorf("APP_ENV must be one of local, development, staging, production")
+	}
+
 	readTimeoutSec, err := intFromEnv("HTTP_READ_TIMEOUT_SEC", defaultReadTimeoutSec)
 	if err != nil {
 		return Config{}, err
@@ -47,7 +66,11 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
-	return Config{
+	cfg := Config{
+		Environment:         environment,
+		DatabaseURL:         stringFromEnv("DATABASE_URL", ""),
+		JWTSigningKey:       stringFromEnv("JWT_SIGNING_KEY", ""),
+		StripeWebhookSecret: stringFromEnv("STRIPE_WEBHOOK_SECRET", ""),
 		HTTP: HTTPConfig{
 			Addr:            stringFromEnv("HTTP_ADDR", defaultHTTPAddr),
 			ReadTimeout:     time.Duration(readTimeoutSec) * time.Second,
@@ -55,7 +78,13 @@ func Load() (Config, error) {
 			IdleTimeout:     time.Duration(idleTimeoutSec) * time.Second,
 			ShutdownTimeout: time.Duration(shutdownTimeoutSec) * time.Second,
 		},
-	}, nil
+	}
+
+	if err := validateRequired(cfg); err != nil {
+		return Config{}, err
+	}
+
+	return cfg, nil
 }
 
 func intFromEnv(key string, fallback int) (int, error) {
@@ -81,4 +110,33 @@ func stringFromEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func isValidEnvironment(value string) bool {
+	_, ok := validEnvironments[value]
+	return ok
+}
+
+func validateRequired(cfg Config) error {
+	if cfg.Environment != "production" {
+		return nil
+	}
+
+	missing := make([]string, 0, 3)
+	if cfg.DatabaseURL == "" {
+		missing = append(missing, "DATABASE_URL")
+	}
+	if cfg.JWTSigningKey == "" {
+		missing = append(missing, "JWT_SIGNING_KEY")
+	}
+	if cfg.StripeWebhookSecret == "" {
+		missing = append(missing, "STRIPE_WEBHOOK_SECRET")
+	}
+
+	if len(missing) > 0 {
+		sort.Strings(missing)
+		return fmt.Errorf("missing required environment variables for production: %s", strings.Join(missing, ", "))
+	}
+
+	return nil
 }
