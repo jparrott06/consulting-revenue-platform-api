@@ -31,21 +31,21 @@
     },
     {
       "story_id": "A-04",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/a-04-http-middleware",
-      "pr_url": null,
-      "last_updated": "2026-04-15T13:33:20Z",
-      "notes": "Implemented request ID, recovery, timeout, and structured request logging middleware."
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/4",
+      "last_updated": "2026-04-15T14:11:14Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "A-05",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
+      "status": "in_review",
+      "owner": "codex-agent",
+      "branch": "feat/a-05-api-error-contract",
       "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "last_updated": "2026-04-15T14:11:14Z",
+      "notes": "Added centralized API error envelope and response helpers with request_id propagation."
     },
     {
       "story_id": "B-01",

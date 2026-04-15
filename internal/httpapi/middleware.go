@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -42,13 +41,7 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 		defer func() {
 			if rec := recover(); rec != nil {
 				log.Printf("panic recovered request_id=%s method=%s path=%s", requestIDFromContext(r.Context()), r.Method, r.URL.Path)
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusInternalServerError)
-				_ = json.NewEncoder(w).Encode(map[string]string{
-					"code":       "internal_error",
-					"message":    "internal server error",
-					"request_id": requestIDFromContext(r.Context()),
-				})
+				writeError(r.Context(), w, http.StatusInternalServerError, "internal_error", "internal server error", nil)
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -56,7 +49,7 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 }
 
 func timeoutMiddleware(next http.Handler) http.Handler {
-	return http.TimeoutHandler(next, requestTimeout, `{"code":"request_timeout","message":"request timed out"}`+"\n")
+	return http.TimeoutHandler(next, requestTimeout, `{"code":"request_timeout","message":"request timed out","request_id":""}`+"\n")
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
