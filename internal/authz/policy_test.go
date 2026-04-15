@@ -17,6 +17,12 @@ func TestRoleAllows_Matrix(t *testing.T) {
 		{"guest", ActionContextRead, false},
 		{"guest", ActionAdminOps, false},
 		{"owner", "unknown.action", false},
+		{"owner", ActionMembershipRead, true},
+		{"owner", ActionMembershipWrite, true},
+		{"accountant", ActionMembershipRead, true},
+		{"accountant", ActionMembershipWrite, false},
+		{"contractor", ActionMembershipRead, false},
+		{"contractor", ActionMembershipWrite, false},
 	}
 	for _, tt := range tests {
 		if got := RoleAllows(tt.role, tt.action); got != tt.want {
