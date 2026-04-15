@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -14,17 +15,19 @@ import (
 
 // Run starts the HTTP server and blocks until context cancellation.
 func Run(ctx context.Context, cfg config.Config) error {
+	var pool *sql.DB
 	if cfg.DatabaseURL != "" {
 		conn, err := db.OpenPostgres(ctx, cfg.DatabaseURL)
 		if err != nil {
 			return fmt.Errorf("database connectivity check failed: %w", err)
 		}
 		defer conn.Close()
+		pool = conn
 	}
 
 	srv := &http.Server{
 		Addr:         cfg.HTTP.Addr,
-		Handler:      httpapi.NewHandler(),
+		Handler:      httpapi.NewHandler(pool),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,

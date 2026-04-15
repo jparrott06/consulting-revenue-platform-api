@@ -1,11 +1,15 @@
 package httpapi
 
-import "net/http"
+import (
+	"database/sql"
+	"net/http"
+)
 
 // NewHandler returns the root HTTP router for the API.
-func NewHandler() http.Handler {
+func NewHandler(db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthHandler)
+	mux.HandleFunc("POST /auth/register", registerHandler(db))
 
 	return chain(
 		mux,
