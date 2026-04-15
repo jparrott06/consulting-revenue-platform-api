@@ -27,7 +27,7 @@ func Run(ctx context.Context, cfg config.Config) error {
 
 	srv := &http.Server{
 		Addr:         cfg.HTTP.Addr,
-		Handler:      httpapi.NewHandler(pool),
+		Handler:      httpapi.NewHandler(cfg, pool),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,

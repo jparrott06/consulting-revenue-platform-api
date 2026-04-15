@@ -6,13 +6,15 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 )
 
 func TestHealthz(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	rec := httptest.NewRecorder()
 
-	NewHandler(nil).ServeHTTP(rec, req)
+	NewHandler(config.Config{}, nil).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rec.Code)

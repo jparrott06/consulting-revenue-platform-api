@@ -38,6 +38,8 @@ type Config struct {
 	Environment         string
 	DatabaseURL         string
 	JWTSigningKey       string
+	JWTAccessTTL        time.Duration
+	JWTRefreshTTL       time.Duration
 	StripeWebhookSecret string
 	HTTP                HTTPConfig
 }
@@ -66,10 +68,21 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	accessMin, err := intFromEnv("JWT_ACCESS_TTL_MIN", 15)
+	if err != nil {
+		return Config{}, err
+	}
+	refreshDays, err := intFromEnv("JWT_REFRESH_TTL_DAYS", 7)
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{
 		Environment:         environment,
 		DatabaseURL:         stringFromEnv("DATABASE_URL", ""),
 		JWTSigningKey:       stringFromEnv("JWT_SIGNING_KEY", ""),
+		JWTAccessTTL:        time.Duration(accessMin) * time.Minute,
+		JWTRefreshTTL:       time.Duration(refreshDays) * 24 * time.Hour,
 		StripeWebhookSecret: stringFromEnv("STRIPE_WEBHOOK_SECRET", ""),
 		HTTP: HTTPConfig{
 			Addr:            stringFromEnv("HTTP_ADDR", defaultHTTPAddr),
