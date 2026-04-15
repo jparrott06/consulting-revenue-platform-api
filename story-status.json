@@ -76,21 +76,21 @@
     },
     {
       "story_id": "B-04",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/b-04-b-05-tenant-authz",
       "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/9",
-      "last_updated": "2026-04-15T23:38:13Z",
-      "notes": "Tenant JWT + X-Organization-ID middleware"
+      "last_updated": "2026-04-15T23:39:28Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "B-05",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/b-04-b-05-tenant-authz",
       "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/9",
-      "last_updated": "2026-04-15T23:38:13Z",
-      "notes": "RBAC policy and protected routes"
+      "last_updated": "2026-04-15T23:39:28Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "B-06",
