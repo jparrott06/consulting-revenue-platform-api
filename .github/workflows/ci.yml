@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  schema-validate:
+    name: schema-validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install jsonschema
+        run: pip install jsonschema
+
+      - name: Validate backlog.v1.json
+        run: python -m jsonschema -i backlog.v1.json backlog.v1.schema.json
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Go module
+        id: detect
+        shell: bash
+        run: |
+          if [ -f "go.mod" ]; then
+            echo "has_go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_go=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Go
+        if: steps.detect.outputs.has_go == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: gofmt check
+        if: steps.detect.outputs.has_go == 'true'
+        shell: bash
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: golangci-lint
+        if: steps.detect.outputs.has_go == 'true'
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: Skip lint (no Go module yet)
+        if: steps.detect.outputs.has_go != 'true'
+        run: echo "No go.mod present yet; lint skipped."
+
+  unit-test:
+    name: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Go module
+        id: detect
+        shell: bash
+        run: |
+          if [ -f "go.mod" ]; then
+            echo "has_go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_go=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Go
+        if: steps.detect.outputs.has_go == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run unit tests
+        if: steps.detect.outputs.has_go == 'true'
+        run: go test ./...
+
+      - name: Skip tests (no Go module yet)
+        if: steps.detect.outputs.has_go != 'true'
+        run: echo "No go.mod present yet; tests skipped."
+
+  race-test:
+    name: race-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Go module
+        id: detect
+        shell: bash
+        run: |
+          if [ -f "go.mod" ]; then
+            echo "has_go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_go=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Go
+        if: steps.detect.outputs.has_go == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run race tests
+        if: steps.detect.outputs.has_go == 'true'
+        run: go test -race ./...
+
+      - name: Skip race tests (no Go module yet)
+        if: steps.detect.outputs.has_go != 'true'
+        run: echo "No go.mod present yet; race tests skipped."
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Go module
+        id: detect
+        shell: bash
+        run: |
+          if [ -f "go.mod" ]; then
+            echo "has_go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_go=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Go
+        if: steps.detect.outputs.has_go == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        if: steps.detect.outputs.has_go == 'true'
+        run: go build ./...
+
+      - name: Skip build (no Go module yet)
+        if: steps.detect.outputs.has_go != 'true'
+        run: echo "No go.mod present yet; build skipped."

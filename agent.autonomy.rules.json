@@ -1,0 +1,140 @@
+{
+  "version": "1.0",
+  "purpose": "Enable autonomous LLM agents to execute stories end-to-end with minimal human input, including branching, PRs, and merge to main after required checks pass.",
+  "defaults": {
+    "base_branch": "main",
+    "merge_method": "squash",
+    "delete_branch_after_merge": true,
+    "auto_merge_when_green": true,
+    "require_clean_scope": true
+  },
+  "branching": {
+    "strategy": "story-per-branch",
+    "branch_name_pattern": "feat/{story_id}-{short-slug}",
+    "allowed_prefixes": [
+      "feat",
+      "fix",
+      "chore",
+      "docs",
+      "refactor",
+      "test"
+    ],
+    "rules": [
+      "Branch must include story_id in lowercase form (example: feat/a-01-project-skeleton).",
+      "Agents must not develop directly on main.",
+      "Agent must pull latest main before branch creation."
+    ]
+  },
+  "autonomous_flow": [
+    {
+      "step": 1,
+      "name": "Select Story",
+      "rules": [
+        "Choose only stories whose dependencies are complete.",
+        "Do not combine unrelated stories unless explicitly grouped in backlog phases."
+      ]
+    },
+    {
+      "step": 2,
+      "name": "Implement",
+      "rules": [
+        "Implement only listed scope; do not expand out_of_scope.",
+        "Apply security_privacy requirements during implementation."
+      ]
+    },
+    {
+      "step": 3,
+      "name": "Validate Locally",
+      "rules": [
+        "Run formatting, linting, tests, and build checks before creating PR.",
+        "If repository tooling is not present yet, run available checks and document gaps in PR body."
+      ],
+      "required_commands": [
+        "go fmt ./...",
+        "go test ./...",
+        "go test -race ./..."
+      ],
+      "optional_commands_if_available": [
+        "golangci-lint run",
+        "go vet ./...",
+        "gosec ./..."
+      ]
+    },
+    {
+      "step": 4,
+      "name": "Commit",
+      "rules": [
+        "Commit only files relevant to selected story.",
+        "Commit message must include story ID and imperative summary."
+      ],
+      "message_pattern": "{story_id}: {imperative summary}"
+    },
+    {
+      "step": 5,
+      "name": "Open PR",
+      "rules": [
+        "Push branch and open PR targeting main.",
+        "PR title must start with story ID.",
+        "PR body must include: scope completed, tests run, security considerations, and remaining risks."
+      ],
+      "labels": [
+        "autonomous-agent",
+        "story"
+      ]
+    },
+    {
+      "step": 6,
+      "name": "Wait for Checks",
+      "rules": [
+        "Do not merge while any required check is failing or pending.",
+        "If checks fail, inspect logs, fix on same branch, push, and re-run."
+      ]
+    },
+    {
+      "step": 7,
+      "name": "Merge",
+      "rules": [
+        "Use squash merge when all required checks pass.",
+        "Delete remote branch after merge.",
+        "Sync local main after merge."
+      ],
+      "merge_command_preference": "gh pr merge --squash --delete-branch --auto"
+    }
+  ],
+  "pr_template_requirements": {
+    "required_sections": [
+      "Summary",
+      "Story ID",
+      "Acceptance Criteria Mapping",
+      "Security and Privacy Notes",
+      "Test Evidence",
+      "Risks and Follow-ups"
+    ],
+    "acceptance_mapping_rule": "Each acceptance criterion from the story must be listed with implemented evidence or explicit TODO."
+  },
+  "safety_guards": {
+    "forbidden_actions": [
+      "force push to main",
+      "merge with failing required checks",
+      "commit secrets or credentials",
+      "skip tests without justification in PR"
+    ],
+    "requires_human_confirmation": [
+      "destructive data migration",
+      "backward-incompatible API contract change",
+      "dependency upgrade with known critical advisory and no patch path"
+    ]
+  },
+  "required_ci_checks": [
+    "lint",
+    "unit-test",
+    "race-test",
+    "build",
+    "schema-validate"
+  ],
+  "repo_conventions": {
+    "backlog_file": "backlog.v1.json",
+    "backlog_schema_file": "backlog.v1.schema.json",
+    "story_status_file": "story-status.json"
+  }
+}

@@ -1,0 +1,36 @@
+name: CD Main
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  release-readiness:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    name: release-readiness
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Build artifact (if Go module exists)
+        shell: bash
+        run: |
+          if [ -f "go.mod" ]; then
+            echo "Go module detected. Building release artifact..."
+            docker build -t consulting-revenue-platform:main .
+          else
+            echo "No go.mod present yet. Skipping build artifact."
+          fi
+
+      - name: Deployment placeholder
+        run: |
+          echo "CD placeholder: wire deployment target once infra is selected."
+          echo "Examples: Fly.io, Render, AWS ECS/Fargate, Cloud Run."

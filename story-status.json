@@ -1,0 +1,420 @@
+{
+  "version": "1.0",
+  "generated_from": "backlog.v1.json",
+  "statuses": [
+    {
+      "story_id": "A-01",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "A-02",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "A-03",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "A-04",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "A-05",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "B-01",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "B-02",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "B-03",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "B-04",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "B-05",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "B-06",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "C-01",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "C-02",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "C-03",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "C-04",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "C-05",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "D-01",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "D-02",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "D-03",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "D-04",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "D-05",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "D-06",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "E-01",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "E-02",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "E-03",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "E-04",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "E-05",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "F-01",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "F-02",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "F-03",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "F-04",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "G-01",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "G-02",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "G-03",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "G-04",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "G-05",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "G-06",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "H-01",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "H-02",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "H-03",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "H-04",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "H-05",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "H-06",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "I-01",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "I-02",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    },
+    {
+      "story_id": "I-03",
+      "status": "pending",
+      "owner": null,
+      "branch": null,
+      "pr_url": null,
+      "last_updated": null,
+      "notes": ""
+    }
+  ]
+}

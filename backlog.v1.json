@@ -1,0 +1,2605 @@
+{
+  "project": {
+    "name": "consulting-revenue-platform-api",
+    "version": "1.0",
+    "description": "Production-style, multi-tenant Go API for time tracking, invoicing, Stripe-backed payments, and financial reconciliation.",
+    "owner_profile_context": {
+      "primary_skills": [
+        "TypeScript",
+        "Node.js",
+        "Python"
+      ],
+      "target_language": "Go",
+      "target_outcome": "Portfolio-quality backend project that demonstrates direct business impact and production readiness."
+    }
+  },
+  "execution": {
+    "recommended_method": "Parallelize by category after dependencies are satisfied; each story has explicit acceptance and test requirements.",
+    "definition_of_done": [
+      "All stories marked done with all acceptance criteria satisfied.",
+      "All tests passing in CI: unit, integration, migration, and security checks.",
+      "Tenant isolation tests passing for all tenant-scoped endpoints.",
+      "Idempotency and webhook replay tests passing.",
+      "OpenAPI docs and README updated to reflect implemented behavior."
+    ],
+    "global_constraints": [
+      "All tenant-scoped business tables include organization_id.",
+      "All tenant-scoped queries enforce organization_id filtering.",
+      "Mutating endpoints require authentication and authorization.",
+      "Money values are stored as integer minor units; no floating-point arithmetic for currency.",
+      "All logs must avoid secrets and unnecessary PII.",
+      "Standard API error envelope is used everywhere."
+    ],
+    "story_template_contract": {
+      "required_fields": [
+        "id",
+        "category",
+        "title",
+        "description",
+        "scope",
+        "out_of_scope",
+        "dependencies",
+        "api_contract",
+        "data_contract",
+        "implementation_notes",
+        "security_privacy",
+        "edge_cases",
+        "acceptance_criteria",
+        "test_plan",
+        "deliverables",
+        "estimate_points",
+        "priority"
+      ],
+      "agent_rules": [
+        "Do not proceed on a story until dependencies are complete.",
+        "Update API docs and tests in the same PR as code changes.",
+        "For schema changes, include up/down migrations and integration tests.",
+        "When uncertain, favor secure defaults and explicit validation."
+      ]
+    }
+  },
+  "categories": [
+    {
+      "id": "CAT-A",
+      "name": "Platform Foundation",
+      "description": "Bootstrap core runtime, configuration, migrations, middleware, and error contracts."
+    },
+    {
+      "id": "CAT-B",
+      "name": "Identity, Tenancy, and RBAC",
+      "description": "Implement secure authentication, tenant resolution, and role-based authorization."
+    },
+    {
+      "id": "CAT-C",
+      "name": "Clients, Projects, and Time Tracking",
+      "description": "Implement tenant-scoped business entities and time-entry workflows."
+    },
+    {
+      "id": "CAT-D",
+      "name": "Invoicing",
+      "description": "Generate, manage, and render invoices from approved work."
+    },
+    {
+      "id": "CAT-E",
+      "name": "Payments and Reconciliation",
+      "description": "Integrate Stripe payment flows with reliable webhook processing and reconciliation."
+    },
+    {
+      "id": "CAT-F",
+      "name": "Ledger, Audit, and Reporting",
+      "description": "Track immutable financial events and provide key financial reports."
+    },
+    {
+      "id": "CAT-G",
+      "name": "Production Readiness and Operations",
+      "description": "Add queueing, health, observability, CI, and runtime hardening."
+    },
+    {
+      "id": "CAT-H",
+      "name": "Security, Privacy, and Compliance Controls",
+      "description": "Cross-cutting controls for data protection, authorization hardening, and retention."
+    },
+    {
+      "id": "CAT-I",
+      "name": "Documentation and Developer Experience",
+      "description": "OpenAPI, seed data, and runbooks to make the project easy to use and review."
+    }
+  ],
+  "stories": [
+    {
+      "id": "A-01",
+      "category": "CAT-A",
+      "title": "Initialize Go project skeleton and app entrypoint",
+      "description": "Set up module, package layout, app bootstrap, and baseline make targets.",
+      "scope": [
+        "Create Go module and conventional folder structure: cmd, internal, migrations, docs, scripts.",
+        "Add app entrypoint in cmd/api with dependency injection scaffolding.",
+        "Add Makefile targets: run, test, lint, migrate-up, migrate-down."
+      ],
+      "out_of_scope": [
+        "Feature endpoint implementation beyond basic health route."
+      ],
+      "dependencies": [],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/healthz",
+            "auth": "none",
+            "response": {
+              "status": "ok"
+            }
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Use explicit constructor functions for components to avoid global state.",
+        "Introduce interface boundaries where external providers will be injected later."
+      ],
+      "security_privacy": [
+        "App should fail fast if required secure settings are absent in non-dev environments."
+      ],
+      "edge_cases": [
+        "Process receives shutdown signal during startup."
+      ],
+      "acceptance_criteria": [
+        "Application starts and responds 200 on /healthz.",
+        "Makefile targets execute without missing command errors."
+      ],
+      "test_plan": [
+        "Unit test bootstrap config wiring.",
+        "Integration test /healthz route."
+      ],
+      "deliverables": [
+        "Project skeleton committed.",
+        "Initial health route and startup wiring."
+      ],
+      "estimate_points": 3,
+      "priority": "P0"
+    },
+    {
+      "id": "A-02",
+      "category": "CAT-A",
+      "title": "Implement configuration loader and environment contract",
+      "description": "Load typed configuration from env vars with required/optional semantics and safe defaults.",
+      "scope": [
+        "Add typed config package and startup validation.",
+        "Create .env.example with documented keys."
+      ],
+      "out_of_scope": [
+        "Secrets manager integration."
+      ],
+      "dependencies": [
+        "A-01"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Use centralized config struct with nested domains (db, auth, stripe, observability)."
+      ],
+      "security_privacy": [
+        "Never log secret values.",
+        "Reject startup when required production secrets are missing."
+      ],
+      "edge_cases": [
+        "Malformed duration/int env values.",
+        "Missing optional values should fallback to explicit defaults."
+      ],
+      "acceptance_criteria": [
+        "Clear startup errors list missing required keys.",
+        ".env.example includes all required keys with descriptions."
+      ],
+      "test_plan": [
+        "Table-driven parsing tests for valid and invalid env sets."
+      ],
+      "deliverables": [
+        "Config package and validation tests.",
+        ".env.example."
+      ],
+      "estimate_points": 2,
+      "priority": "P0"
+    },
+    {
+      "id": "A-03",
+      "category": "CAT-A",
+      "title": "Add PostgreSQL connectivity and migration runner",
+      "description": "Provide DB pool setup and migration execution tooling.",
+      "scope": [
+        "Initialize DB pool with sensible limits and timeouts.",
+        "Add migration runner command and Makefile integration."
+      ],
+      "out_of_scope": [
+        "Non-PostgreSQL support."
+      ],
+      "dependencies": [
+        "A-02"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Expose DB health check used by readiness endpoint in later story."
+      ],
+      "security_privacy": [
+        "Enable TLS mode configuration for DB connections.",
+        "Avoid logging full DSN if it contains credentials."
+      ],
+      "edge_cases": [
+        "Migration partially fails; ensure transaction/rollback behavior is documented."
+      ],
+      "acceptance_criteria": [
+        "migrate-up and migrate-down run successfully.",
+        "Startup fails gracefully when DB unreachable."
+      ],
+      "test_plan": [
+        "Integration test against disposable Postgres instance."
+      ],
+      "deliverables": [
+        "DB connection package.",
+        "Migration command and scripts."
+      ],
+      "estimate_points": 3,
+      "priority": "P0"
+    },
+    {
+      "id": "A-04",
+      "category": "CAT-A",
+      "title": "Implement core HTTP middleware chain",
+      "description": "Set up request ID, panic recovery, timeout, and request logging middleware.",
+      "scope": [
+        "Generate or propagate request IDs.",
+        "Recover from panics and return sanitized error responses.",
+        "Enforce request timeout."
+      ],
+      "out_of_scope": [
+        "Advanced rate limiting (covered later)."
+      ],
+      "dependencies": [
+        "A-01"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Order middleware deliberately: request ID -> recovery -> timeout -> logging."
+      ],
+      "security_privacy": [
+        "Do not expose panic stack traces in client responses.",
+        "Logging must redact authorization headers."
+      ],
+      "edge_cases": [
+        "Client disconnect mid-request.",
+        "Long-running handlers exceed timeout."
+      ],
+      "acceptance_criteria": [
+        "All responses include request ID.",
+        "Panics return standardized 500 without internals."
+      ],
+      "test_plan": [
+        "Middleware unit tests for panic/timeout behavior."
+      ],
+      "deliverables": [
+        "Middleware package and tests."
+      ],
+      "estimate_points": 3,
+      "priority": "P0"
+    },
+    {
+      "id": "A-05",
+      "category": "CAT-A",
+      "title": "Standardize API error envelope and response helpers",
+      "description": "Create canonical success/error response shapes and reusable error mapping.",
+      "scope": [
+        "Define API error codes and HTTP mapping.",
+        "Build helper functions for JSON success/error writes."
+      ],
+      "out_of_scope": [
+        "Localization of error messages."
+      ],
+      "dependencies": [
+        "A-04"
+      ],
+      "api_contract": {
+        "error_shape": {
+          "code": "string",
+          "message": "string",
+          "request_id": "string",
+          "details": "object|null"
+        }
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Map domain errors to API codes centrally to avoid inconsistent status responses."
+      ],
+      "security_privacy": [
+        "Never pass raw SQL errors to clients."
+      ],
+      "edge_cases": [
+        "Validation errors for nested objects."
+      ],
+      "acceptance_criteria": [
+        "All handlers return consistent error format.",
+        "Validation errors include field-level details."
+      ],
+      "test_plan": [
+        "Handler tests for each major error code path."
+      ],
+      "deliverables": [
+        "Error contract definitions and tests."
+      ],
+      "estimate_points": 2,
+      "priority": "P0"
+    },
+    {
+      "id": "B-01",
+      "category": "CAT-B",
+      "title": "Create users, organizations, memberships schema",
+      "description": "Introduce core identity and tenant schema for multi-tenancy.",
+      "scope": [
+        "Create users table with case-insensitive email uniqueness.",
+        "Create organizations table as tenant root.",
+        "Create memberships linking users to organizations with role and status."
+      ],
+      "out_of_scope": [
+        "Organization billing plan management."
+      ],
+      "dependencies": [
+        "A-03"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "users",
+          "organizations",
+          "memberships"
+        ],
+        "constraints": [
+          "unique(lower(users.email))",
+          "unique(memberships.user_id, memberships.organization_id)"
+        ]
+      },
+      "implementation_notes": [
+        "Use UUID primary keys.",
+        "Add created_at and updated_at columns."
+      ],
+      "security_privacy": [
+        "Store password hashes only, never plaintext."
+      ],
+      "edge_cases": [
+        "User belongs to multiple orgs with different roles."
+      ],
+      "acceptance_criteria": [
+        "Schema migration applies and rolls back cleanly.",
+        "Constraints prevent duplicate memberships."
+      ],
+      "test_plan": [
+        "Migration integration tests for constraints."
+      ],
+      "deliverables": [
+        "Migrations and repository models."
+      ],
+      "estimate_points": 3,
+      "priority": "P0"
+    },
+    {
+      "id": "B-02",
+      "category": "CAT-B",
+      "title": "Implement registration endpoint with secure password handling",
+      "description": "Allow user registration and default tenant creation.",
+      "scope": [
+        "POST /auth/register with email/password/full_name.",
+        "Create default organization and owner membership."
+      ],
+      "out_of_scope": [
+        "Email verification flow."
+      ],
+      "dependencies": [
+        "B-01",
+        "A-05"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/register",
+            "auth": "none"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "users",
+          "organizations",
+          "memberships"
+        ]
+      },
+      "implementation_notes": [
+        "Use bcrypt or argon2 with calibrated cost factor."
+      ],
+      "security_privacy": [
+        "Use generic error messaging for duplicate/invalid credentials to reduce user enumeration.",
+        "Enforce password complexity and minimum length."
+      ],
+      "edge_cases": [
+        "Email case variants should resolve to same user uniqueness."
+      ],
+      "acceptance_criteria": [
+        "Valid registration creates user, organization, and owner membership in one transaction.",
+        "Duplicate email registration fails with standardized error."
+      ],
+      "test_plan": [
+        "Unit tests for validation.",
+        "Integration test for transactional creation."
+      ],
+      "deliverables": [
+        "Registration handler/service/repo and tests."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "B-03",
+      "category": "CAT-B",
+      "title": "Implement login, refresh rotation, and logout",
+      "description": "Authenticate users and manage short-lived access tokens with rotating refresh tokens.",
+      "scope": [
+        "POST /auth/login",
+        "POST /auth/refresh",
+        "POST /auth/logout",
+        "Persist hashed refresh tokens with metadata."
+      ],
+      "out_of_scope": [
+        "OAuth social login."
+      ],
+      "dependencies": [
+        "B-02"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/login",
+            "auth": "none"
+          },
+          {
+            "method": "POST",
+            "path": "/auth/refresh",
+            "auth": "refresh_token"
+          },
+          {
+            "method": "POST",
+            "path": "/auth/logout",
+            "auth": "access_token"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "auth_sessions"
+        ]
+      },
+      "implementation_notes": [
+        "Rotate refresh token on every refresh and invalidate prior token.",
+        "Track token family to detect replay."
+      ],
+      "security_privacy": [
+        "Hash refresh tokens at rest.",
+        "On replay detection, revoke full token family."
+      ],
+      "edge_cases": [
+        "Concurrent refresh calls with same token.",
+        "Expired and malformed tokens."
+      ],
+      "acceptance_criteria": [
+        "Access and refresh tokens issued on login.",
+        "Refresh token cannot be reused after rotation.",
+        "Logout revokes active session token."
+      ],
+      "test_plan": [
+        "Integration tests for refresh replay and revocation."
+      ],
+      "deliverables": [
+        "Auth session schema and token management logic."
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "B-04",
+      "category": "CAT-B",
+      "title": "Implement auth middleware and active tenant resolution",
+      "description": "Resolve user identity and active organization per request.",
+      "scope": [
+        "JWT verification middleware.",
+        "Active organization selection via header or path param.",
+        "Membership existence and status checks."
+      ],
+      "out_of_scope": [
+        "Automatic org fallback selection UI behavior."
+      ],
+      "dependencies": [
+        "B-03"
+      ],
+      "api_contract": {
+        "headers": [
+          "Authorization: Bearer <token>",
+          "X-Organization-ID: <uuid>"
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "memberships"
+        ]
+      },
+      "implementation_notes": [
+        "Inject auth context with user_id, organization_id, role into request context."
+      ],
+      "security_privacy": [
+        "Reject if user is not active member of requested organization."
+      ],
+      "edge_cases": [
+        "User has access to multiple organizations.",
+        "Missing or invalid X-Organization-ID."
+      ],
+      "acceptance_criteria": [
+        "Protected routes reject missing/invalid tokens.",
+        "Cross-tenant access attempts are denied."
+      ],
+      "test_plan": [
+        "Middleware tests for valid/invalid auth and org membership."
+      ],
+      "deliverables": [
+        "Auth middleware and context utilities."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "B-05",
+      "category": "CAT-B",
+      "title": "Add role-based authorization policy engine",
+      "description": "Centralize authorization checks for owner, accountant, and contractor roles.",
+      "scope": [
+        "Define role-permission matrix for all existing endpoints.",
+        "Add authorization guard utility to handlers/services."
+      ],
+      "out_of_scope": [
+        "Custom role editor in V1."
+      ],
+      "dependencies": [
+        "B-04"
+      ],
+      "api_contract": {
+        "roles": [
+          "owner",
+          "accountant",
+          "contractor"
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "memberships"
+        ]
+      },
+      "implementation_notes": [
+        "Default deny when permission mapping missing."
+      ],
+      "security_privacy": [
+        "Authorization checks must happen before data retrieval wherever feasible."
+      ],
+      "edge_cases": [
+        "Role changed while token is still valid."
+      ],
+      "acceptance_criteria": [
+        "Endpoints enforce role capabilities consistently.",
+        "Unauthorized actions return standardized forbidden errors."
+      ],
+      "test_plan": [
+        "Policy matrix tests across all roles and actions."
+      ],
+      "deliverables": [
+        "Authorization policy module and test matrix."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "B-06",
+      "category": "CAT-B",
+      "title": "Membership management APIs",
+      "description": "Manage membership invites, role changes, and removals.",
+      "scope": [
+        "Endpoints to list, invite/add, change role, and remove members.",
+        "Enforce owner-only role changes and removals."
+      ],
+      "out_of_scope": [
+        "Email delivery for invites."
+      ],
+      "dependencies": [
+        "B-05"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/memberships",
+            "auth": "owner_or_accountant"
+          },
+          {
+            "method": "POST",
+            "path": "/memberships",
+            "auth": "owner"
+          },
+          {
+            "method": "PATCH",
+            "path": "/memberships/{membership_id}",
+            "auth": "owner"
+          },
+          {
+            "method": "DELETE",
+            "path": "/memberships/{membership_id}",
+            "auth": "owner"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "memberships"
+        ]
+      },
+      "implementation_notes": [
+        "Prevent deletion or demotion of last remaining owner."
+      ],
+      "security_privacy": [
+        "Do not disclose membership info to non-authorized roles."
+      ],
+      "edge_cases": [
+        "Attempt to remove self as last owner.",
+        "Invite existing member."
+      ],
+      "acceptance_criteria": [
+        "Last-owner protection enforced.",
+        "Membership lifecycle transitions work correctly."
+      ],
+      "test_plan": [
+        "Integration tests for last-owner and permission checks."
+      ],
+      "deliverables": [
+        "Membership management handlers and tests."
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "C-01",
+      "category": "CAT-C",
+      "title": "Client CRUD with tenant scoping and soft delete",
+      "description": "Implement client management endpoints for organizations.",
+      "scope": [
+        "Create, list, retrieve, update, soft-delete clients.",
+        "Support filtering by active status."
+      ],
+      "out_of_scope": [
+        "Advanced CRM features."
+      ],
+      "dependencies": [
+        "B-05"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/clients"
+          },
+          {
+            "method": "GET",
+            "path": "/clients"
+          },
+          {
+            "method": "PATCH",
+            "path": "/clients/{client_id}"
+          },
+          {
+            "method": "DELETE",
+            "path": "/clients/{client_id}"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "clients"
+        ],
+        "required_columns": [
+          "organization_id",
+          "name",
+          "billing_email",
+          "currency_preference",
+          "deleted_at"
+        ]
+      },
+      "implementation_notes": [
+        "Default list excludes soft-deleted clients.",
+        "Use organization_id+id filtering for all CRUD."
+      ],
+      "security_privacy": [
+        "Validate and normalize billing emails.",
+        "Avoid exposing deleted records unless explicitly requested by authorized roles."
+      ],
+      "edge_cases": [
+        "Delete client with active projects (should be blocked or require force behavior definition)."
+      ],
+      "acceptance_criteria": [
+        "Client CRUD works only within active organization.",
+        "Soft-deleted clients no longer appear in default lists."
+      ],
+      "test_plan": [
+        "Tenant isolation tests.",
+        "Soft-delete behavior tests."
+      ],
+      "deliverables": [
+        "Client schema, API, service, and tests."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "C-02",
+      "category": "CAT-C",
+      "title": "Project CRUD with client linkage validation",
+      "description": "Implement project management linked to clients and billing settings.",
+      "scope": [
+        "Create, list, update, archive projects.",
+        "Project references a client in the same organization."
+      ],
+      "out_of_scope": [
+        "Project templates."
+      ],
+      "dependencies": [
+        "C-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/projects"
+          },
+          {
+            "method": "GET",
+            "path": "/projects"
+          },
+          {
+            "method": "PATCH",
+            "path": "/projects/{project_id}"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "projects"
+        ],
+        "required_columns": [
+          "organization_id",
+          "client_id",
+          "name",
+          "billing_mode",
+          "default_rate_minor"
+        ]
+      },
+      "implementation_notes": [
+        "Enforce valid billing modes with enum/check constraint."
+      ],
+      "security_privacy": [
+        "Reject cross-tenant client reference at write time."
+      ],
+      "edge_cases": [
+        "Archived project cannot receive new time entries."
+      ],
+      "acceptance_criteria": [
+        "Project CRUD with valid tenant and client linkage.",
+        "Archived status blocks future active use where expected."
+      ],
+      "test_plan": [
+        "Linkage and status validation tests."
+      ],
+      "deliverables": [
+        "Project schema and endpoints."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "C-03",
+      "category": "CAT-C",
+      "title": "Time entry CRUD with lifecycle states",
+      "description": "Implement time entry creation and edits with status controls.",
+      "scope": [
+        "Create, update, list time entries.",
+        "State machine: draft, submitted, approved, invoiced."
+      ],
+      "out_of_scope": [
+        "Timer start/stop feature."
+      ],
+      "dependencies": [
+        "C-02"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/time-entries"
+          },
+          {
+            "method": "PATCH",
+            "path": "/time-entries/{time_entry_id}"
+          },
+          {
+            "method": "GET",
+            "path": "/time-entries"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "time_entries"
+        ],
+        "required_columns": [
+          "organization_id",
+          "project_id",
+          "user_id",
+          "work_date",
+          "minutes",
+          "hourly_rate_minor",
+          "status"
+        ]
+      },
+      "implementation_notes": [
+        "Store duration in integer minutes.",
+        "Prevent edits to approved/invoiced entries unless explicitly unlocked by authorized role."
+      ],
+      "security_privacy": [
+        "Contractors should only edit their own draft entries unless policy says otherwise."
+      ],
+      "edge_cases": [
+        "Minutes > 1440 rejected.",
+        "Negative or zero duration rejected."
+      ],
+      "acceptance_criteria": [
+        "Valid entries can be created and listed with filters.",
+        "Invalid state edits are blocked with clear errors."
+      ],
+      "test_plan": [
+        "Lifecycle transition tests.",
+        "Validation tests for bounds and required fields."
+      ],
+      "deliverables": [
+        "Time entry schema, service logic, and APIs."
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "C-04",
+      "category": "CAT-C",
+      "title": "Time entry submission and approval workflow",
+      "description": "Implement explicit submit, approve, and reject transitions with role rules.",
+      "scope": [
+        "Submit endpoint for contractors.",
+        "Approve/reject endpoints for owner/accountant."
+      ],
+      "out_of_scope": [
+        "Multi-step custom approval chains."
+      ],
+      "dependencies": [
+        "C-03",
+        "B-05"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/time-entries/{time_entry_id}/submit"
+          },
+          {
+            "method": "POST",
+            "path": "/time-entries/{time_entry_id}/approve"
+          },
+          {
+            "method": "POST",
+            "path": "/time-entries/{time_entry_id}/reject"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "time_entries"
+        ]
+      },
+      "implementation_notes": [
+        "Record approver/reviewer metadata and timestamps."
+      ],
+      "security_privacy": [
+        "Only authorized roles can approve/reject."
+      ],
+      "edge_cases": [
+        "Approving already approved entry should be idempotent or explicit conflict.",
+        "Reject reason required for rejects."
+      ],
+      "acceptance_criteria": [
+        "Role and state transitions enforced exactly.",
+        "Transition audit events are recorded."
+      ],
+      "test_plan": [
+        "Role/state matrix tests."
+      ],
+      "deliverables": [
+        "Workflow endpoints and policy checks."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "C-05",
+      "category": "CAT-C",
+      "title": "Time entry list filtering, cursor pagination, and bulk actions",
+      "description": "Provide scalable listing and bulk submit/approve operations.",
+      "scope": [
+        "Filter by date range, user, status, project.",
+        "Cursor pagination with stable sorting.",
+        "Bulk submit and bulk approve actions."
+      ],
+      "out_of_scope": [
+        "Full-text search over notes."
+      ],
+      "dependencies": [
+        "C-04"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/time-entries?cursor=...&limit=..."
+          },
+          {
+            "method": "POST",
+            "path": "/time-entries/bulk-submit"
+          },
+          {
+            "method": "POST",
+            "path": "/time-entries/bulk-approve"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "time_entries"
+        ],
+        "indexes": [
+          "(organization_id, work_date, id)",
+          "(organization_id, status, id)"
+        ]
+      },
+      "implementation_notes": [
+        "Bulk operations should return per-item result arrays."
+      ],
+      "security_privacy": [
+        "Enforce max bulk size limit to prevent abuse."
+      ],
+      "edge_cases": [
+        "Partial success in bulk operations.",
+        "Invalid IDs mixed with valid IDs."
+      ],
+      "acceptance_criteria": [
+        "Pagination stable and deterministic under repeated calls.",
+        "Bulk responses report item-level success/failure."
+      ],
+      "test_plan": [
+        "Pagination consistency tests.",
+        "Bulk partial failure tests."
+      ],
+      "deliverables": [
+        "Filtering/pagination implementation and bulk endpoints."
+      ],
+      "estimate_points": 8,
+      "priority": "P1"
+    },
+    {
+      "id": "D-01",
+      "category": "CAT-D",
+      "title": "Invoice schema with per-organization numbering",
+      "description": "Introduce invoice and line item schema with transactional numbering.",
+      "scope": [
+        "Create invoices and invoice_line_items tables.",
+        "Add per-organization invoice number uniqueness and sequence allocation."
+      ],
+      "out_of_scope": [
+        "Country-specific legal invoice templates."
+      ],
+      "dependencies": [
+        "A-03",
+        "C-04"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "invoices",
+          "invoice_line_items",
+          "invoice_sequences"
+        ],
+        "constraints": [
+          "unique(invoices.organization_id, invoices.invoice_number)"
+        ]
+      },
+      "implementation_notes": [
+        "Use row-level lock or sequence table to avoid duplicate numbers under concurrency."
+      ],
+      "security_privacy": [
+        "No sensitive card data is stored in invoice tables."
+      ],
+      "edge_cases": [
+        "Concurrent invoice creation in same organization."
+      ],
+      "acceptance_criteria": [
+        "Invoice numbers unique and monotonic per org under concurrency."
+      ],
+      "test_plan": [
+        "Concurrency integration test for numbering."
+      ],
+      "deliverables": [
+        "Invoice migrations and repository functions."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "D-02",
+      "category": "CAT-D",
+      "title": "Generate invoice from approved uninvoiced time entries",
+      "description": "Create invoice generation workflow from approved work within a date range.",
+      "scope": [
+        "Endpoint to generate draft invoice from approved entries.",
+        "Mark source entries linked/invoiced atomically."
+      ],
+      "out_of_scope": [
+        "Auto-scheduled recurring invoice generation."
+      ],
+      "dependencies": [
+        "D-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/invoices/generate"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "invoices",
+          "invoice_line_items",
+          "time_entries"
+        ]
+      },
+      "implementation_notes": [
+        "Use transaction to avoid race conditions and duplicate inclusion."
+      ],
+      "security_privacy": [
+        "Ensure organization-scoped selection only."
+      ],
+      "edge_cases": [
+        "No eligible entries in range.",
+        "Some entries become invoiced concurrently."
+      ],
+      "acceptance_criteria": [
+        "Generated invoice includes only approved uninvoiced entries.",
+        "Entries are linked to invoice atomically."
+      ],
+      "test_plan": [
+        "Integration tests for duplicate generation prevention."
+      ],
+      "deliverables": [
+        "Invoice generation service and endpoint."
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "D-03",
+      "category": "CAT-D",
+      "title": "Draft invoice line item editing and total recomputation",
+      "description": "Allow line item edits for draft invoices only with server-side total computation.",
+      "scope": [
+        "Add/edit/remove line items for draft invoices.",
+        "Recompute subtotal/tax/total server-side."
+      ],
+      "out_of_scope": [
+        "Complex tax jurisdiction engines."
+      ],
+      "dependencies": [
+        "D-02"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "PATCH",
+            "path": "/invoices/{invoice_id}/line-items"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "invoice_line_items"
+        ]
+      },
+      "implementation_notes": [
+        "Clients should not submit invoice totals; totals are derived and persisted by backend."
+      ],
+      "security_privacy": [
+        "Lock editing when invoice status is sent/paid/void."
+      ],
+      "edge_cases": [
+        "Negative line item amounts should be constrained by policy.",
+        "Rounding consistency after edits."
+      ],
+      "acceptance_criteria": [
+        "Line item updates accepted only for draft invoices.",
+        "Totals remain consistent and deterministic."
+      ],
+      "test_plan": [
+        "Unit tests for recalculation logic and rounding."
+      ],
+      "deliverables": [
+        "Line item mutation endpoints and calculation module."
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "D-04",
+      "category": "CAT-D",
+      "title": "Currency and rounding rules for USD/JPY",
+      "description": "Implement deterministic money representation and currency-specific precision.",
+      "scope": [
+        "Store amount_minor and currency on all monetary records.",
+        "Enforce JPY zero-decimal and USD cent precision rules."
+      ],
+      "out_of_scope": [
+        "FX conversion service."
+      ],
+      "dependencies": [
+        "D-01"
+      ],
+      "api_contract": {
+        "money_format": {
+          "amount_minor": "int64",
+          "currency": "USD|JPY"
+        }
+      },
+      "data_contract": {
+        "tables": [
+          "time_entries",
+          "invoice_line_items",
+          "invoices",
+          "payments"
+        ]
+      },
+      "implementation_notes": [
+        "Expose helper methods for formatting display amounts while preserving minor-unit storage."
+      ],
+      "security_privacy": [
+        "Disallow cross-currency arithmetic without explicit conversion logic."
+      ],
+      "edge_cases": [
+        "Rounding at tax boundaries.",
+        "Large amount overflow checks."
+      ],
+      "acceptance_criteria": [
+        "All money calculations pass precision tests with no float usage."
+      ],
+      "test_plan": [
+        "Comprehensive unit tests for currency behavior."
+      ],
+      "deliverables": [
+        "Money utility package and integration into invoice flow."
+      ],
+      "estimate_points": 3,
+      "priority": "P0"
+    },
+    {
+      "id": "D-05",
+      "category": "CAT-D",
+      "title": "Send invoice workflow and immutable sent-state behavior",
+      "description": "Transition invoices to sent state and lock sensitive edits.",
+      "scope": [
+        "Endpoint to send invoice and set sent_at metadata.",
+        "Prevent mutable fields after sent."
+      ],
+      "out_of_scope": [
+        "Email templating system beyond basic send metadata."
+      ],
+      "dependencies": [
+        "D-03"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/invoices/{invoice_id}/send"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "invoices"
+        ]
+      },
+      "implementation_notes": [
+        "Support idempotent send behavior to avoid duplicate transitions."
+      ],
+      "security_privacy": [
+        "Restrict send action to owner/accountant roles."
+      ],
+      "edge_cases": [
+        "Send called on paid/void invoice."
+      ],
+      "acceptance_criteria": [
+        "Sent invoices transition correctly and become immutable where defined."
+      ],
+      "test_plan": [
+        "State transition tests with repeated send calls."
+      ],
+      "deliverables": [
+        "Send endpoint and state guards."
+      ],
+      "estimate_points": 3,
+      "priority": "P1"
+    },
+    {
+      "id": "D-06",
+      "category": "CAT-D",
+      "title": "Invoice PDF rendering and secure document access",
+      "description": "Generate invoice PDF and provide secure retrieval.",
+      "scope": [
+        "Render invoice PDF.",
+        "Provide endpoint to get short-lived signed document URL."
+      ],
+      "out_of_scope": [
+        "Permanent publicly accessible invoice URLs."
+      ],
+      "dependencies": [
+        "D-05"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/invoices/{invoice_id}/pdf"
+          },
+          {
+            "method": "POST",
+            "path": "/invoices/{invoice_id}/pdf-url"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "invoices"
+        ]
+      },
+      "implementation_notes": [
+        "Signed URLs should be short-lived and tied to auth context."
+      ],
+      "security_privacy": [
+        "Prevent unauthorized document access across tenants."
+      ],
+      "edge_cases": [
+        "PDF generation fails due to malformed template data."
+      ],
+      "acceptance_criteria": [
+        "Authorized users can retrieve invoice PDF.",
+        "Unauthorized or cross-tenant access is denied."
+      ],
+      "test_plan": [
+        "Integration tests for auth and tenant checks."
+      ],
+      "deliverables": [
+        "PDF renderer integration and secure retrieval endpoints."
+      ],
+      "estimate_points": 5,
+      "priority": "P2"
+    },
+    {
+      "id": "E-01",
+      "category": "CAT-E",
+      "title": "Create Stripe payment link for sent invoices",
+      "description": "Create checkout/payment link for invoices and persist external reference.",
+      "scope": [
+        "Endpoint to create Stripe payment link for invoice.",
+        "Persist stripe identifiers for reconciliation."
+      ],
+      "out_of_scope": [
+        "Non-Stripe payment processors."
+      ],
+      "dependencies": [
+        "D-05"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/invoices/{invoice_id}/payment-link"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "payments",
+          "invoices"
+        ]
+      },
+      "implementation_notes": [
+        "Use idempotency keys for Stripe create calls."
+      ],
+      "security_privacy": [
+        "Never expose Stripe secret key or sensitive webhook data in logs."
+      ],
+      "edge_cases": [
+        "Link creation requested for unpaid but not sent invoice.",
+        "Retry after network timeout."
+      ],
+      "acceptance_criteria": [
+        "Payment link created only for eligible invoice states.",
+        "Duplicate create attempts are safe and idempotent."
+      ],
+      "test_plan": [
+        "Mocked Stripe client tests for idempotent behavior."
+      ],
+      "deliverables": [
+        "Payment link endpoint and Stripe client integration."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "E-02",
+      "category": "CAT-E",
+      "title": "Implement Stripe webhook receiver with signature verification",
+      "description": "Receive webhook events securely and persist raw events for async processing.",
+      "scope": [
+        "POST /webhooks/stripe endpoint.",
+        "Signature verification and storage in webhook_events table."
+      ],
+      "out_of_scope": [
+        "Direct synchronous invoice updates in webhook handler."
+      ],
+      "dependencies": [
+        "E-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/webhooks/stripe",
+            "auth": "stripe_signature"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "webhook_events"
+        ],
+        "required_columns": [
+          "provider",
+          "event_id",
+          "event_type",
+          "payload_json",
+          "received_at",
+          "processed_at",
+          "processing_error"
+        ]
+      },
+      "implementation_notes": [
+        "Return 2xx quickly after persistence, process asynchronously."
+      ],
+      "security_privacy": [
+        "Verify Stripe signature using webhook signing secret.",
+        "Rate limit webhook endpoint to reduce abuse."
+      ],
+      "edge_cases": [
+        "Duplicate event delivery.",
+        "Malformed payload or invalid signature."
+      ],
+      "acceptance_criteria": [
+        "Valid signed events are persisted and acknowledged.",
+        "Invalid signature returns error and does not persist."
+      ],
+      "test_plan": [
+        "Signature verification tests using test vectors."
+      ],
+      "deliverables": [
+        "Webhook endpoint and persistence model."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "E-03",
+      "category": "CAT-E",
+      "title": "Build idempotent webhook processing worker",
+      "description": "Process stored webhook events in background with retries and deduplication.",
+      "scope": [
+        "Queue worker that loads unprocessed events and applies handlers.",
+        "Idempotency guard by provider event ID."
+      ],
+      "out_of_scope": [
+        "Multi-provider webhook processing."
+      ],
+      "dependencies": [
+        "E-02",
+        "G-01"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "webhook_events",
+          "payments",
+          "invoices"
+        ]
+      },
+      "implementation_notes": [
+        "Use transactional update marking processed_at only after successful reconciliation."
+      ],
+      "security_privacy": [
+        "Do not log full webhook payloads in production by default."
+      ],
+      "edge_cases": [
+        "Out-of-order event arrival.",
+        "Temporary downstream DB unavailability."
+      ],
+      "acceptance_criteria": [
+        "Duplicate events do not create duplicate payments.",
+        "Failed events are retried and eventually dead-lettered per policy."
+      ],
+      "test_plan": [
+        "Replay tests using same event multiple times.",
+        "Retry/backoff tests."
+      ],
+      "deliverables": [
+        "Webhook worker and handler registry."
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "E-04",
+      "category": "CAT-E",
+      "title": "Reconcile Stripe payment outcomes with invoice state",
+      "description": "Apply payment success/failure outcomes to invoices and payments tables.",
+      "scope": [
+        "Handle payment succeeded and failed event families.",
+        "Update invoice statuses and payment records."
+      ],
+      "out_of_scope": [
+        "Advanced dunning workflows."
+      ],
+      "dependencies": [
+        "E-03"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "payments",
+          "invoices",
+          "ledger_entries"
+        ]
+      },
+      "implementation_notes": [
+        "Validate currency matches invoice currency before applying payment.",
+        "Record external IDs for traceability."
+      ],
+      "security_privacy": [
+        "Prevent unauthorized manual state changes bypassing reconciliation."
+      ],
+      "edge_cases": [
+        "Partial payment handling policy.",
+        "Overpayment handling policy."
+      ],
+      "acceptance_criteria": [
+        "Successful payments transition eligible invoices to paid.",
+        "Currency mismatch causes safe failure and audit trail."
+      ],
+      "test_plan": [
+        "Event-driven reconciliation integration tests."
+      ],
+      "deliverables": [
+        "Reconciliation logic and state transition enforcement."
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "E-05",
+      "category": "CAT-E",
+      "title": "Refund and payment failure event handling",
+      "description": "Handle refunds and terminal failure events with legal state transitions.",
+      "scope": [
+        "Process refund-related events and adjust invoice/payment records.",
+        "Support failed payment status tracking."
+      ],
+      "out_of_scope": [
+        "Automated customer communications for refunds."
+      ],
+      "dependencies": [
+        "E-04"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "payments",
+          "invoices",
+          "ledger_entries"
+        ]
+      },
+      "implementation_notes": [
+        "Represent refunds as separate ledger/payment adjustments to preserve history."
+      ],
+      "security_privacy": [
+        "Disallow negative total anomalies caused by repeated refund events."
+      ],
+      "edge_cases": [
+        "Multiple partial refunds.",
+        "Refund event replay."
+      ],
+      "acceptance_criteria": [
+        "Refund events update financial state accurately and idempotently."
+      ],
+      "test_plan": [
+        "Partial and repeated refund tests."
+      ],
+      "deliverables": [
+        "Refund event handling in reconciliation worker."
+      ],
+      "estimate_points": 5,
+      "priority": "P2"
+    },
+    {
+      "id": "F-01",
+      "category": "CAT-F",
+      "title": "Implement immutable financial ledger entries",
+      "description": "Create append-only ledger table for major financial transitions.",
+      "scope": [
+        "Add ledger_entries schema and write paths for invoice/payment transitions.",
+        "No update/delete operations for ledger data."
+      ],
+      "out_of_scope": [
+        "Double-entry accounting engine."
+      ],
+      "dependencies": [
+        "D-02",
+        "E-04"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/ledger"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "ledger_entries"
+        ],
+        "required_columns": [
+          "organization_id",
+          "event_type",
+          "entity_type",
+          "entity_id",
+          "amount_minor",
+          "currency",
+          "metadata_json",
+          "created_at"
+        ]
+      },
+      "implementation_notes": [
+        "Use typed event_type values for easy audit/reporting."
+      ],
+      "security_privacy": [
+        "Restrict ledger read access to owner/accountant."
+      ],
+      "edge_cases": [
+        "Backfill/reconciliation corrections should append compensating entries."
+      ],
+      "acceptance_criteria": [
+        "Ledger captures all defined financial transitions and cannot be mutated."
+      ],
+      "test_plan": [
+        "Mutation rejection tests and completeness tests."
+      ],
+      "deliverables": [
+        "Ledger schema, writes, and read endpoint."
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "F-02",
+      "category": "CAT-F",
+      "title": "Implement audit log for security and business actions",
+      "description": "Track actor-action-target events with redacted change summaries.",
+      "scope": [
+        "Create audit_logs table and event helper.",
+        "Capture auth events, membership role changes, invoice/payment transitions."
+      ],
+      "out_of_scope": [
+        "SIEM forwarding integration."
+      ],
+      "dependencies": [
+        "B-05",
+        "D-05",
+        "E-04"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/audit-logs"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "audit_logs"
+        ]
+      },
+      "implementation_notes": [
+        "Use compact diff metadata fields rather than full object snapshots where possible."
+      ],
+      "security_privacy": [
+        "Redact sensitive fields: passwords, tokens, secrets, raw webhook signatures."
+      ],
+      "edge_cases": [
+        "System-initiated actions without direct user actor."
+      ],
+      "acceptance_criteria": [
+        "Audit events present for all required action types.",
+        "Sensitive data redaction confirmed by tests."
+      ],
+      "test_plan": [
+        "Audit event coverage tests and redaction assertions."
+      ],
+      "deliverables": [
+        "Audit schema and capture utilities."
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "F-03",
+      "category": "CAT-F",
+      "title": "Reporting endpoints for outstanding, paid, and aging metrics",
+      "description": "Provide finance dashboards via API aggregates.",
+      "scope": [
+        "Outstanding totals endpoint.",
+        "Paid this month endpoint.",
+        "Aging buckets endpoint."
+      ],
+      "out_of_scope": [
+        "Advanced BI dashboards."
+      ],
+      "dependencies": [
+        "F-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/reports/outstanding"
+          },
+          {
+            "method": "GET",
+            "path": "/reports/paid-this-month"
+          },
+          {
+            "method": "GET",
+            "path": "/reports/aging"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "invoices",
+          "payments"
+        ]
+      },
+      "implementation_notes": [
+        "Constrain date-range query bounds for performance."
+      ],
+      "security_privacy": [
+        "Only accountant/owner can access reporting endpoints."
+      ],
+      "edge_cases": [
+        "Timezone cutoffs for month boundaries.",
+        "No data scenarios should return zero values, not errors."
+      ],
+      "acceptance_criteria": [
+        "Reports return correct aggregates and enforce tenant boundaries."
+      ],
+      "test_plan": [
+        "Fixture-based integration tests for report correctness."
+      ],
+      "deliverables": [
+        "Reporting service and endpoints."
+      ],
+      "estimate_points": 5,
+      "priority": "P2"
+    },
+    {
+      "id": "F-04",
+      "category": "CAT-F",
+      "title": "CSV export endpoints with injection-safe formatting",
+      "description": "Export key records as CSV while preventing spreadsheet formula injection.",
+      "scope": [
+        "CSV export for invoices, payments, and time summaries.",
+        "Safe escaping/prefixing for dangerous cells."
+      ],
+      "out_of_scope": [
+        "Excel-specific formatting/styling."
+      ],
+      "dependencies": [
+        "F-03"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/exports/invoices.csv"
+          },
+          {
+            "method": "GET",
+            "path": "/exports/payments.csv"
+          },
+          {
+            "method": "GET",
+            "path": "/exports/time-summary.csv"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "invoices",
+          "payments",
+          "time_entries"
+        ]
+      },
+      "implementation_notes": [
+        "Stable column order and UTF-8 encoding are required."
+      ],
+      "security_privacy": [
+        "Prefix cells starting with =,+,-,@ to mitigate formula injection."
+      ],
+      "edge_cases": [
+        "Large exports should stream response instead of buffering whole dataset."
+      ],
+      "acceptance_criteria": [
+        "CSV output is valid, stable, and safe from formula injection."
+      ],
+      "test_plan": [
+        "CSV encoding and injection protection tests."
+      ],
+      "deliverables": [
+        "CSV export handlers and safety utilities."
+      ],
+      "estimate_points": 3,
+      "priority": "P2"
+    },
+    {
+      "id": "G-01",
+      "category": "CAT-G",
+      "title": "Introduce background job framework with retries and dead-lettering",
+      "description": "Provide durable async processing for webhooks and retryable tasks.",
+      "scope": [
+        "Queue abstraction and worker lifecycle.",
+        "Exponential backoff retries and max-attempt dead-letter behavior."
+      ],
+      "out_of_scope": [
+        "Distributed multi-region queue."
+      ],
+      "dependencies": [
+        "A-01",
+        "A-03"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "jobs_dead_letter"
+        ]
+      },
+      "implementation_notes": [
+        "Choose a queue library appropriate for PostgreSQL/Redis and local development simplicity."
+      ],
+      "security_privacy": [
+        "Do not place secrets in queue payloads."
+      ],
+      "edge_cases": [
+        "Worker restarts mid-processing.",
+        "Poison message loops."
+      ],
+      "acceptance_criteria": [
+        "Retry policy works with capped attempts and dead-letter storage."
+      ],
+      "test_plan": [
+        "Worker retry simulation tests."
+      ],
+      "deliverables": [
+        "Queue worker package and operational configuration."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "G-02",
+      "category": "CAT-G",
+      "title": "Implement health, readiness, and liveness probes",
+      "description": "Expose runtime health endpoints for deployment and orchestration systems.",
+      "scope": [
+        "Add /healthz, /readyz, /livez endpoints with dependency checks on readiness."
+      ],
+      "out_of_scope": [
+        "Deep diagnostics endpoint."
+      ],
+      "dependencies": [
+        "A-03",
+        "G-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/healthz"
+          },
+          {
+            "method": "GET",
+            "path": "/readyz"
+          },
+          {
+            "method": "GET",
+            "path": "/livez"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Readiness should include DB and queue connectivity checks."
+      ],
+      "security_privacy": [
+        "Do not expose internal topology details in probe responses."
+      ],
+      "edge_cases": [
+        "Transient dependency outage."
+      ],
+      "acceptance_criteria": [
+        "Readiness fails when dependencies unavailable; liveness remains appropriate."
+      ],
+      "test_plan": [
+        "Probe behavior tests with mocked dependency health."
+      ],
+      "deliverables": [
+        "Probe handlers and dependency check wiring."
+      ],
+      "estimate_points": 2,
+      "priority": "P1"
+    },
+    {
+      "id": "G-03",
+      "category": "CAT-G",
+      "title": "Add observability: structured logs, metrics, and tracing",
+      "description": "Instrument API and background workers with operational telemetry.",
+      "scope": [
+        "Structured logging with request IDs.",
+        "Prometheus metrics endpoint and key counters/histograms.",
+        "OpenTelemetry tracing for HTTP and DB operations."
+      ],
+      "out_of_scope": [
+        "Vendor-specific APM dashboards."
+      ],
+      "dependencies": [
+        "A-04"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/metrics"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Instrument critical paths: auth, invoice generation, webhook processing."
+      ],
+      "security_privacy": [
+        "No PII in metric labels.",
+        "Logs should use redaction middleware for sensitive fields."
+      ],
+      "edge_cases": [
+        "High-cardinality labels causing memory issues."
+      ],
+      "acceptance_criteria": [
+        "Metrics and traces available in local runtime.",
+        "Critical operations emit expected telemetry."
+      ],
+      "test_plan": [
+        "Instrumentation smoke tests."
+      ],
+      "deliverables": [
+        "Observability wiring and docs."
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "G-04",
+      "category": "CAT-G",
+      "title": "Rate limiting and abuse protections",
+      "description": "Add endpoint-aware rate limits, especially for auth and webhook ingress.",
+      "scope": [
+        "Per-IP and per-user limits where applicable.",
+        "429 responses with retry hints."
+      ],
+      "out_of_scope": [
+        "WAF management."
+      ],
+      "dependencies": [
+        "A-04",
+        "B-03",
+        "E-02"
+      ],
+      "api_contract": {
+        "error_codes": [
+          "rate_limited"
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Use stricter limits on login endpoints to reduce brute-force risk."
+      ],
+      "security_privacy": [
+        "Protect auth endpoints from credential stuffing patterns."
+      ],
+      "edge_cases": [
+        "Shared NAT IPs causing false positives."
+      ],
+      "acceptance_criteria": [
+        "Configured limits are enforced and observable."
+      ],
+      "test_plan": [
+        "Rate-limit integration tests for auth and webhook routes."
+      ],
+      "deliverables": [
+        "Rate limiter middleware and config."
+      ],
+      "estimate_points": 3,
+      "priority": "P1"
+    },
+    {
+      "id": "G-05",
+      "category": "CAT-G",
+      "title": "HTTP security headers and CORS allowlist",
+      "description": "Harden HTTP responses and cross-origin policy.",
+      "scope": [
+        "Set security headers.",
+        "Configure CORS allowlist by environment."
+      ],
+      "out_of_scope": [
+        "CSP tuning for SPA assets (backend-only repo)."
+      ],
+      "dependencies": [
+        "A-04"
+      ],
+      "api_contract": {
+        "headers": [
+          "X-Content-Type-Options",
+          "X-Frame-Options",
+          "Referrer-Policy"
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "In production, disallow wildcard CORS origins."
+      ],
+      "security_privacy": [
+        "Prevent browser-based misuse from unauthorized origins."
+      ],
+      "edge_cases": [
+        "Preflight behavior for custom auth headers."
+      ],
+      "acceptance_criteria": [
+        "Expected security headers are present.",
+        "Only configured origins pass CORS in non-dev."
+      ],
+      "test_plan": [
+        "CORS and header response tests."
+      ],
+      "deliverables": [
+        "Security header middleware and CORS config."
+      ],
+      "estimate_points": 2,
+      "priority": "P1"
+    },
+    {
+      "id": "G-06",
+      "category": "CAT-G",
+      "title": "Containerization and CI pipeline",
+      "description": "Create reproducible build/runtime and CI enforcement for quality/security.",
+      "scope": [
+        "Dockerfile (non-root user, minimal base).",
+        "docker-compose for local DB and dependencies.",
+        "CI pipeline for lint, test, migration check, dependency vulnerability scan."
+      ],
+      "out_of_scope": [
+        "CD deployment automation to cloud provider."
+      ],
+      "dependencies": [
+        "A-01",
+        "A-03"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Use multi-stage Docker builds.",
+        "Cache Go modules in CI for speed."
+      ],
+      "security_privacy": [
+        "Pin base images and avoid running as root."
+      ],
+      "edge_cases": [
+        "Migration drift detected in CI."
+      ],
+      "acceptance_criteria": [
+        "CI fails on lint/test/security failures.",
+        "Container runs and passes health check locally."
+      ],
+      "test_plan": [
+        "CI workflow dry-run and local container smoke test."
+      ],
+      "deliverables": [
+        "Docker assets and CI configuration."
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "H-01",
+      "category": "CAT-H",
+      "title": "Centralized input validation and payload limits",
+      "description": "Normalize and validate inbound payloads with strict size constraints.",
+      "scope": [
+        "Validation helpers for all request DTOs.",
+        "Global request body max size and field-level limits."
+      ],
+      "out_of_scope": [
+        "Natural language validation semantics."
+      ],
+      "dependencies": [
+        "A-05"
+      ],
+      "api_contract": {
+        "error_codes": [
+          "validation_error",
+          "payload_too_large"
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Normalize whitespace and canonicalize emails before storage."
+      ],
+      "security_privacy": [
+        "Mitigate malformed payload and memory abuse vectors."
+      ],
+      "edge_cases": [
+        "Deeply nested JSON payloads.",
+        "Unexpected additional fields handling policy."
+      ],
+      "acceptance_criteria": [
+        "Invalid payloads rejected consistently with field-level details."
+      ],
+      "test_plan": [
+        "Boundary tests for max lengths and payload sizes."
+      ],
+      "deliverables": [
+        "Validation framework and endpoint integration."
+      ],
+      "estimate_points": 3,
+      "priority": "P0"
+    },
+    {
+      "id": "H-02",
+      "category": "CAT-H",
+      "title": "Data classification and log redaction policy enforcement",
+      "description": "Classify sensitive fields and ensure logs/audit outputs redact appropriately.",
+      "scope": [
+        "Define data sensitivity classification matrix.",
+        "Implement log redaction hooks for sensitive keys."
+      ],
+      "out_of_scope": [
+        "Enterprise DLP integrations."
+      ],
+      "dependencies": [
+        "A-04",
+        "F-02"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Provide test fixtures containing known secret-like patterns."
+      ],
+      "security_privacy": [
+        "Ensure no passwords, tokens, secret keys, or webhook signatures appear in logs."
+      ],
+      "edge_cases": [
+        "Nested JSON fields containing sensitive values."
+      ],
+      "acceptance_criteria": [
+        "Redaction tests pass for all defined sensitive fields."
+      ],
+      "test_plan": [
+        "Snapshot tests for sanitized log outputs."
+      ],
+      "deliverables": [
+        "Redaction middleware/utilities and policy doc."
+      ],
+      "estimate_points": 3,
+      "priority": "P0"
+    },
+    {
+      "id": "H-03",
+      "category": "CAT-H",
+      "title": "Optional field encryption at rest for sensitive metadata",
+      "description": "Encrypt selected sensitive columns in application layer where warranted.",
+      "scope": [
+        "Add encryption utility abstraction.",
+        "Encrypt/decrypt selected fields in write/read paths."
+      ],
+      "out_of_scope": [
+        "KMS integration beyond local key config for V1."
+      ],
+      "dependencies": [
+        "A-02"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "clients"
+        ],
+        "candidate_fields": [
+          "tax_id",
+          "sensitive_notes"
+        ]
+      },
+      "implementation_notes": [
+        "Include versioned encryption envelope to support future key rotation."
+      ],
+      "security_privacy": [
+        "Keys must come from env/secret manager and never be committed."
+      ],
+      "edge_cases": [
+        "Corrupted ciphertext handling on read."
+      ],
+      "acceptance_criteria": [
+        "Encrypted fields stored unreadable at rest and correctly decrypted for authorized users."
+      ],
+      "test_plan": [
+        "Encryption/decryption tests, including invalid ciphertext cases."
+      ],
+      "deliverables": [
+        "Crypto utility and encrypted field integration."
+      ],
+      "estimate_points": 5,
+      "priority": "P2"
+    },
+    {
+      "id": "H-04",
+      "category": "CAT-H",
+      "title": "Authorization regression suite across tenants and roles",
+      "description": "Build explicit negative tests for IDOR and permission bypass scenarios.",
+      "scope": [
+        "Test cross-tenant data access attempts on all major entity endpoints.",
+        "Test role escalation and forbidden action attempts."
+      ],
+      "out_of_scope": [
+        "External penetration testing."
+      ],
+      "dependencies": [
+        "B-05",
+        "C-04",
+        "D-05",
+        "E-04"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Use test helpers for organization fixtures and mixed-role users."
+      ],
+      "security_privacy": [
+        "Focus on IDOR prevention and consistent authorization response behavior."
+      ],
+      "edge_cases": [
+        "Valid entity ID from different organization.",
+        "Stale token where role was downgraded."
+      ],
+      "acceptance_criteria": [
+        "All cross-tenant access attempts fail.",
+        "Forbidden role actions fail consistently."
+      ],
+      "test_plan": [
+        "Automated regression matrix executed in CI."
+      ],
+      "deliverables": [
+        "Security regression test suite."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "H-05",
+      "category": "CAT-H",
+      "title": "Threat model and security controls mapping document",
+      "description": "Document primary threats and mapped controls implemented in code.",
+      "scope": [
+        "Create threat model doc with abuse scenarios.",
+        "Map each threat to prevention/detection controls and tests."
+      ],
+      "out_of_scope": [
+        "Formal external audit report."
+      ],
+      "dependencies": [
+        "H-04"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Cover webhook spoofing, replay, token theft, SQL injection, CSV injection, tenant breakout."
+      ],
+      "security_privacy": [
+        "Document residual risks and operational mitigations."
+      ],
+      "edge_cases": [
+        "Unknown unknowns acknowledged with periodic review guidance."
+      ],
+      "acceptance_criteria": [
+        "Threat model reviewed and linked from README."
+      ],
+      "test_plan": [
+        "N/A (documentation story)."
+      ],
+      "deliverables": [
+        "docs/threat-model.md"
+      ],
+      "estimate_points": 2,
+      "priority": "P1"
+    },
+    {
+      "id": "H-06",
+      "category": "CAT-H",
+      "title": "Data retention and deletion workflows",
+      "description": "Define and implement retention for logs/webhook payloads and deletion flows.",
+      "scope": [
+        "Retention job for stale operational data where legally permissible.",
+        "Soft-delete workflows for users/orgs with accounting record preservation rules."
+      ],
+      "out_of_scope": [
+        "Automated legal policy engine per jurisdiction."
+      ],
+      "dependencies": [
+        "F-02",
+        "G-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/organizations/{organization_id}/deactivate"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "audit_logs",
+          "webhook_events"
+        ]
+      },
+      "implementation_notes": [
+        "Make retention windows configurable by environment."
+      ],
+      "security_privacy": [
+        "Preserve financial records while minimizing unnecessary personal data retention."
+      ],
+      "edge_cases": [
+        "Attempted deletion where legal retention obligations apply."
+      ],
+      "acceptance_criteria": [
+        "Retention job deletes/archives only eligible records.",
+        "Org deactivation flow preserves required accounting data."
+      ],
+      "test_plan": [
+        "Retention eligibility and deactivation behavior tests."
+      ],
+      "deliverables": [
+        "Retention job and deactivation endpoint."
+      ],
+      "estimate_points": 5,
+      "priority": "P2"
+    },
+    {
+      "id": "I-01",
+      "category": "CAT-I",
+      "title": "Complete OpenAPI specification with examples",
+      "description": "Publish API contract covering all implemented endpoints and auth schemes.",
+      "scope": [
+        "Add OpenAPI spec with request/response examples and error schema.",
+        "Keep spec in sync with handlers."
+      ],
+      "out_of_scope": [
+        "GraphQL schema."
+      ],
+      "dependencies": [
+        "A-05",
+        "C-05",
+        "D-06",
+        "E-04",
+        "F-03"
+      ],
+      "api_contract": {
+        "artifacts": [
+          "docs/openapi.yaml"
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Include security schemes for bearer auth and webhook signature docs."
+      ],
+      "security_privacy": [
+        "Mark sensitive fields and auth requirements explicitly."
+      ],
+      "edge_cases": [
+        "Spec drift as endpoints evolve."
+      ],
+      "acceptance_criteria": [
+        "Spec lints successfully in CI.",
+        "All implemented endpoints documented."
+      ],
+      "test_plan": [
+        "OpenAPI lint workflow step."
+      ],
+      "deliverables": [
+        "OpenAPI spec and CI linting."
+      ],
+      "estimate_points": 3,
+      "priority": "P1"
+    },
+    {
+      "id": "I-02",
+      "category": "CAT-I",
+      "title": "Seed data and local demo bootstrap",
+      "description": "Provide deterministic sample data for demos and integration testing.",
+      "scope": [
+        "Seed command creates demo org, users, clients, projects, entries, invoices.",
+        "Provide reset option for repeatable demo runs."
+      ],
+      "out_of_scope": [
+        "Real customer anonymization pipeline."
+      ],
+      "dependencies": [
+        "C-04",
+        "D-05"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "users",
+          "organizations",
+          "clients",
+          "projects",
+          "time_entries",
+          "invoices"
+        ]
+      },
+      "implementation_notes": [
+        "Use fake names/domains only."
+      ],
+      "security_privacy": [
+        "No real PII in seed artifacts."
+      ],
+      "edge_cases": [
+        "Re-running seed should not duplicate unique entities unexpectedly."
+      ],
+      "acceptance_criteria": [
+        "Single command produces working demo state.",
+        "Seed is idempotent or has clear reset semantics."
+      ],
+      "test_plan": [
+        "Seed command integration test."
+      ],
+      "deliverables": [
+        "Seed tooling and sample fixtures."
+      ],
+      "estimate_points": 3,
+      "priority": "P2"
+    },
+    {
+      "id": "I-03",
+      "category": "CAT-I",
+      "title": "README, architecture notes, and operations runbook",
+      "description": "Create implementation and usage docs for contributors and reviewers.",
+      "scope": [
+        "README with setup, architecture, and story execution guide.",
+        "Runbook covering migrations, incident basics, and operational checks."
+      ],
+      "out_of_scope": [
+        "Formal SRE handbook."
+      ],
+      "dependencies": [
+        "I-01",
+        "G-06"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Link to threat model and OpenAPI docs."
+      ],
+      "security_privacy": [
+        "Include secure config handling instructions and secret hygiene."
+      ],
+      "edge_cases": [
+        "Docs diverge from implementation over time."
+      ],
+      "acceptance_criteria": [
+        "New contributor can run app and tests using README only."
+      ],
+      "test_plan": [
+        "Manual doc-driven setup validation."
+      ],
+      "deliverables": [
+        "README and docs/runbook.md"
+      ],
+      "estimate_points": 2,
+      "priority": "P1"
+    }
+  ],
+  "phases": [
+    {
+      "id": "PHASE-1",
+      "name": "Foundation and Auth",
+      "story_ids": [
+        "A-01",
+        "A-02",
+        "A-03",
+        "A-04",
+        "A-05",
+        "B-01",
+        "B-02",
+        "B-03",
+        "B-04",
+        "B-05"
+      ]
+    },
+    {
+      "id": "PHASE-2",
+      "name": "Core Domain Workflows",
+      "story_ids": [
+        "B-06",
+        "C-01",
+        "C-02",
+        "C-03",
+        "C-04",
+        "C-05",
+        "D-01",
+        "D-02",
+        "D-03",
+        "D-04",
+        "D-05",
+        "D-06"
+      ]
+    },
+    {
+      "id": "PHASE-3",
+      "name": "Payments and Financial Integrity",
+      "story_ids": [
+        "G-01",
+        "E-01",
+        "E-02",
+        "E-03",
+        "E-04",
+        "E-05",
+        "F-01",
+        "F-02",
+        "F-03",
+        "F-04"
+      ]
+    },
+    {
+      "id": "PHASE-4",
+      "name": "Hardening and Delivery",
+      "story_ids": [
+        "G-02",
+        "G-03",
+        "G-04",
+        "G-05",
+        "G-06",
+        "H-01",
+        "H-02",
+        "H-03",
+        "H-04",
+        "H-05",
+        "H-06",
+        "I-01",
+        "I-02",
+        "I-03"
+      ]
+    }
+  ]
+}
