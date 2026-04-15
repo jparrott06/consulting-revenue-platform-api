@@ -40,21 +40,21 @@
     },
     {
       "story_id": "A-05",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/a-05-api-error-contract",
-      "pr_url": null,
-      "last_updated": "2026-04-15T14:11:14Z",
-      "notes": "Added centralized API error envelope and response helpers with request_id propagation."
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/5",
+      "last_updated": "2026-04-15T14:15:16Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "B-01",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
+      "status": "in_review",
+      "owner": "codex-agent",
+      "branch": "feat/b-01-tenant-schema",
       "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "last_updated": "2026-04-15T14:15:16Z",
+      "notes": "Added users, organizations, and memberships schema with key constraints and domain models."
     },
     {
       "story_id": "B-02",
