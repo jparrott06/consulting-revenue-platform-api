@@ -1,6 +1,9 @@
 package repo
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestParseQuantityHundredths(t *testing.T) {
 	tests := []struct {
@@ -34,10 +37,19 @@ func TestParseQuantityHundredths(t *testing.T) {
 }
 
 func TestComputeLineTotalMinor_Rounding(t *testing.T) {
-	if got := computeLineTotalMinor(150, 101); got != 152 {
-		t.Fatalf("expected 152, got %d", got)
+	got, err := computeLineTotalMinor(150, 101)
+	if err != nil || got != 152 {
+		t.Fatalf("expected 152, got %d err=%v", got, err)
 	}
-	if got := computeLineTotalMinor(333, 100); got != 333 {
-		t.Fatalf("expected 333, got %d", got)
+	got, err = computeLineTotalMinor(333, 100)
+	if err != nil || got != 333 {
+		t.Fatalf("expected 333, got %d err=%v", got, err)
+	}
+}
+
+func TestComputeLineTotalMinor_Overflow(t *testing.T) {
+	_, err := computeLineTotalMinor(math.MaxInt64, 2)
+	if err == nil {
+		t.Fatal("expected overflow error")
 	}
 }

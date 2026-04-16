@@ -25,20 +25,6 @@ type ClientRecord struct {
 	UpdatedAt          time.Time
 }
 
-// NormalizeCurrencyCode returns uppercased ISO 4217 code or error if invalid.
-func NormalizeCurrencyCode(s string) (string, error) {
-	s = strings.TrimSpace(strings.ToUpper(s))
-	if len(s) != 3 {
-		return "", errors.New("currency must be a 3-letter ISO 4217 code")
-	}
-	for _, r := range s {
-		if r < 'A' || r > 'Z' {
-			return "", errors.New("currency must be a 3-letter ISO 4217 code")
-		}
-	}
-	return s, nil
-}
-
 // NormalizeBillingEmail trims and lowercases email for storage (citext compares case-insensitively).
 func NormalizeBillingEmail(s string) string {
 	return strings.TrimSpace(strings.ToLower(s))

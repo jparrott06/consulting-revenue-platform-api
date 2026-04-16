@@ -100,7 +100,7 @@ func handlePatchInvoiceLineItems(w http.ResponseWriter, r *http.Request, db *sql
 	}
 	if err != nil {
 		msg := err.Error()
-		if strings.Contains(msg, "quantity") || strings.Contains(msg, "description") || strings.Contains(msg, "unit_amount_minor") {
+		if strings.Contains(msg, "quantity") || strings.Contains(msg, "description") || strings.Contains(msg, "unit_amount_minor") || strings.Contains(msg, "overflow") {
 			writeError(ctx, w, http.StatusBadRequest, "validation_error", msg, nil)
 			return
 		}

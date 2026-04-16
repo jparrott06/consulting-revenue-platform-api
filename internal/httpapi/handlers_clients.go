@@ -119,7 +119,7 @@ func handleCreateClient(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	id, err := repo.CreateClient(ctx, db, p.OrganizationID, req.Name, req.BillingEmail, req.CurrencyPreference)
 	if err != nil {
 		msg := err.Error()
-		if msg == "name is required" || msg == "billing_email is required" || strings.Contains(msg, "currency must be") {
+		if msg == "name is required" || msg == "billing_email is required" || strings.Contains(msg, "currency") || errors.Is(err, repo.ErrUnsupportedCurrency) {
 			writeError(ctx, w, http.StatusBadRequest, "validation_error", msg, nil)
 			return
 		}
@@ -210,7 +210,7 @@ func handlePatchClient(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	if err != nil {
 		msg := err.Error()
-		if strings.Contains(msg, "cannot be empty") || strings.Contains(msg, "currency must be") {
+		if strings.Contains(msg, "cannot be empty") || strings.Contains(msg, "currency") || errors.Is(err, repo.ErrUnsupportedCurrency) {
 			writeError(ctx, w, http.StatusBadRequest, "validation_error", msg, nil)
 			return
 		}

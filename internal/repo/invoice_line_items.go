@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -61,7 +62,10 @@ WHERE id = $1 AND invoice_id = $2 AND organization_id = $3`, id, invoiceID, orga
 		if item.UnitAmountMinor < 0 {
 			return InvoiceRecord{}, errors.New("unit_amount_minor must be non-negative")
 		}
-		lineTotal := computeLineTotalMinor(qtyHundredths, item.UnitAmountMinor)
+		lineTotal, err := computeLineTotalMinor(qtyHundredths, item.UnitAmountMinor)
+		if err != nil {
+			return InvoiceRecord{}, err
+		}
 
 		if item.ID == nil {
 			if _, err := tx.ExecContext(ctx, `
@@ -177,7 +181,13 @@ func parseQuantityHundredths(raw string) (int64, string, error) {
 	return h, fmt.Sprintf("%d.%02d", whole, frac), nil
 }
 
-func computeLineTotalMinor(quantityHundredths, unitAmountMinor int64) int64 {
+func computeLineTotalMinor(quantityHundredths, unitAmountMinor int64) (int64, error) {
+	if unitAmountMinor > 0 && quantityHundredths > math.MaxInt64/unitAmountMinor {
+		return 0, errors.New("line amount overflow")
+	}
 	product := quantityHundredths * unitAmountMinor
-	return (product + 50) / 100
+	if product < 0 {
+		return 0, errors.New("line amount overflow")
+	}
+	return (product + 50) / 100, nil
 }
