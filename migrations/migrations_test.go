@@ -36,6 +36,21 @@ func TestAuthSessionsMigrationFilesExist(t *testing.T) {
 	}
 }
 
+func TestTimeEntryWorkflowMigrationFilesExist(t *testing.T) {
+	t.Parallel()
+
+	paths := []string{
+		filepath.Join("000008_time_entry_workflow.up.sql"),
+		filepath.Join("000008_time_entry_workflow.down.sql"),
+	}
+
+	for _, p := range paths {
+		if _, err := os.Stat(p); err != nil {
+			t.Fatalf("expected migration file %s to exist: %v", p, err)
+		}
+	}
+}
+
 func TestTimeEntriesMigrationFilesExist(t *testing.T) {
 	t.Parallel()
 
