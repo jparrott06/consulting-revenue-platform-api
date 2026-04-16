@@ -17,6 +17,7 @@ func mountInvoiceRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
 	mux.Handle("POST /v1/invoices/generate", requireTenantAuth(cfg, db, requireRole(authz.ActionInvoiceWrite, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handleGenerateInvoice(w, r, db)
 	}))))
+	mountInvoiceLineItemRoutes(mux, cfg, db)
 }
 
 type generateInvoiceRequest struct {
