@@ -35,6 +35,10 @@ func TestRoleAllows_Matrix(t *testing.T) {
 		{"owner", ActionProjectWrite, true},
 		{"accountant", ActionProjectWrite, true},
 		{"contractor", ActionProjectWrite, false},
+		{"owner", ActionTimeEntryRead, true},
+		{"contractor", ActionTimeEntryRead, true},
+		{"owner", ActionTimeEntryWrite, true},
+		{"contractor", ActionTimeEntryWrite, true},
 	}
 	for _, tt := range tests {
 		if got := RoleAllows(tt.role, tt.action); got != tt.want {

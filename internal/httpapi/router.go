@@ -24,6 +24,7 @@ func NewHandler(cfg config.Config, db *sql.DB) http.Handler {
 	mountMembershipRoutes(mux, cfg, db)
 	mountClientRoutes(mux, cfg, db)
 	mountProjectRoutes(mux, cfg, db)
+	mountTimeEntryRoutes(mux, cfg, db)
 
 	return chain(
 		mux,
