@@ -143,7 +143,6 @@ WHERE organization_id = $1`
 	if filters.To != nil {
 		q += fmt.Sprintf(" AND work_date <= $%d", n)
 		args = append(args, filters.To.Format("2006-01-02"))
-		n++
 	}
 	q += ` ORDER BY work_date ASC, id ASC`
 
