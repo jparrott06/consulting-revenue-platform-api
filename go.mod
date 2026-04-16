@@ -1,6 +1,6 @@
 module github.com/jparrott06/consulting-revenue-platform-api
 
-go 1.23.0
+go 1.23.12
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
