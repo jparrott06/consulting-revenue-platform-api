@@ -12,6 +12,9 @@ import (
 // ErrInvoiceNotFound indicates invoice does not exist for organization scope.
 var ErrInvoiceNotFound = errors.New("invoice not found")
 
+// ErrInvoiceNotSendable is returned when the invoice cannot be issued (for example void or paid).
+var ErrInvoiceNotSendable = errors.New("invoice cannot be sent in current state")
+
 // InvoiceRecord stores invoice header fields.
 type InvoiceRecord struct {
 	ID             uuid.UUID
@@ -93,4 +96,82 @@ RETURNING id, organization_id, invoice_number, status, currency, subtotal_minor,
 		return InvoiceRecord{}, err
 	}
 	return rec, nil
+}
+
+// SendInvoice transitions a draft invoice to issued (sent), sets issued_at when first issued, and is
+// idempotent when the invoice is already issued.
+func SendInvoice(ctx context.Context, db *sql.DB, organizationID, invoiceID uuid.UUID) (InvoiceRecord, error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return InvoiceRecord{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var rec InvoiceRecord
+	err = tx.QueryRowContext(ctx, `
+UPDATE invoices
+SET status = 'issued', issued_at = COALESCE(issued_at, NOW()), updated_at = NOW()
+WHERE id = $1 AND organization_id = $2 AND status = 'draft'
+RETURNING id, organization_id, invoice_number, status, currency, subtotal_minor, tax_minor, total_minor, issued_at, due_at, created_at, updated_at`,
+		invoiceID, organizationID,
+	).Scan(
+		&rec.ID,
+		&rec.OrganizationID,
+		&rec.InvoiceNumber,
+		&rec.Status,
+		&rec.Currency,
+		&rec.SubtotalMinor,
+		&rec.TaxMinor,
+		&rec.TotalMinor,
+		&rec.IssuedAt,
+		&rec.DueAt,
+		&rec.CreatedAt,
+		&rec.UpdatedAt,
+	)
+	if err == nil {
+		if err := tx.Commit(); err != nil {
+			return InvoiceRecord{}, err
+		}
+		return rec, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return InvoiceRecord{}, err
+	}
+
+	rec, err = loadInvoiceHeader(ctx, tx, organizationID, invoiceID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return InvoiceRecord{}, ErrInvoiceNotFound
+	}
+	if err != nil {
+		return InvoiceRecord{}, err
+	}
+	if rec.Status == "issued" {
+		if err := tx.Commit(); err != nil {
+			return InvoiceRecord{}, err
+		}
+		return rec, nil
+	}
+	return InvoiceRecord{}, ErrInvoiceNotSendable
+}
+
+func loadInvoiceHeader(ctx context.Context, tx *sql.Tx, organizationID, invoiceID uuid.UUID) (InvoiceRecord, error) {
+	var rec InvoiceRecord
+	err := tx.QueryRowContext(ctx, `
+SELECT id, organization_id, invoice_number, status, currency, subtotal_minor, tax_minor, total_minor, issued_at, due_at, created_at, updated_at
+FROM invoices
+WHERE id = $1 AND organization_id = $2`, invoiceID, organizationID).Scan(
+		&rec.ID,
+		&rec.OrganizationID,
+		&rec.InvoiceNumber,
+		&rec.Status,
+		&rec.Currency,
+		&rec.SubtotalMinor,
+		&rec.TaxMinor,
+		&rec.TotalMinor,
+		&rec.IssuedAt,
+		&rec.DueAt,
+		&rec.CreatedAt,
+		&rec.UpdatedAt,
+	)
+	return rec, err
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/authz"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
@@ -16,6 +17,9 @@ import (
 func mountInvoiceRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
 	mux.Handle("POST /v1/invoices/generate", requireTenantAuth(cfg, db, requireRole(authz.ActionInvoiceWrite, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handleGenerateInvoice(w, r, db)
+	}))))
+	mux.Handle("POST /v1/invoices/{invoiceID}/send", requireTenantAuth(cfg, db, requireRole(authz.ActionInvoiceWrite, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleSendInvoice(w, r, db)
 	}))))
 	mountInvoiceLineItemRoutes(mux, cfg, db)
 }
@@ -101,4 +105,51 @@ func handleGenerateInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		"total_minor":    invoice.TotalMinor,
 		"currency":       invoice.Currency,
 	})
+}
+
+func handleSendInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	ctx := r.Context()
+	if db == nil {
+		writeError(ctx, w, http.StatusServiceUnavailable, "service_unavailable", "database is not configured", nil)
+		return
+	}
+	p, ok := PrincipalFromContext(ctx)
+	if !ok {
+		writeError(ctx, w, http.StatusUnauthorized, "unauthorized", "missing principal", nil)
+		return
+	}
+
+	invoiceID, err := uuid.Parse(strings.TrimSpace(r.PathValue("invoiceID")))
+	if err != nil {
+		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invoice id must be a UUID", nil)
+		return
+	}
+
+	invoice, err := repo.SendInvoice(ctx, db, p.OrganizationID, invoiceID)
+	if errors.Is(err, repo.ErrInvoiceNotFound) {
+		writeError(ctx, w, http.StatusNotFound, "not_found", "invoice not found", nil)
+		return
+	}
+	if errors.Is(err, repo.ErrInvoiceNotSendable) {
+		writeError(ctx, w, http.StatusConflict, "conflict", "invoice cannot be sent in current state", nil)
+		return
+	}
+	if err != nil {
+		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not send invoice", nil)
+		return
+	}
+
+	out := map[string]any{
+		"id":             invoice.ID.String(),
+		"invoice_number": invoice.InvoiceNumber,
+		"status":         invoice.Status,
+		"subtotal_minor": invoice.SubtotalMinor,
+		"tax_minor":      invoice.TaxMinor,
+		"total_minor":    invoice.TotalMinor,
+		"currency":       invoice.Currency,
+	}
+	if invoice.IssuedAt.Valid {
+		out["issued_at"] = invoice.IssuedAt.Time.UTC().Format(time.RFC3339Nano)
+	}
+	writeJSON(w, http.StatusOK, out)
 }
