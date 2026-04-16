@@ -103,21 +103,21 @@
     },
     {
       "story_id": "C-01",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/c-01-client-crud",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/16",
+      "last_updated": "2026-04-16T05:06:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "C-02",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/c-02-project-crud",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/17",
+      "last_updated": "2026-04-16T05:07:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "C-03",
