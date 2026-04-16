@@ -56,7 +56,6 @@ WHERE organization_id = $1`
 	if cursor != nil {
 		q += fmt.Sprintf(" AND (work_date > $%d OR (work_date = $%d AND id > $%d))", n, n, n+1)
 		args = append(args, cursor.WorkDate.Format("2006-01-02"), cursor.ID)
-		n += 2
 	}
 	q += fmt.Sprintf(" ORDER BY work_date ASC, id ASC LIMIT %d", limit+1)
 
