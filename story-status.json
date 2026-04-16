@@ -94,12 +94,12 @@
     },
     {
       "story_id": "B-06",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/b-06-membership-apis",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/11",
+      "last_updated": "2026-04-16T00:00:25Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "C-01",
@@ -283,12 +283,12 @@
     },
     {
       "story_id": "G-01",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/g-01-job-framework",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/14",
+      "last_updated": "2026-04-16T00:00:21Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "G-02",
@@ -355,12 +355,12 @@
     },
     {
       "story_id": "H-03",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/h-03-field-encryption",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/13",
+      "last_updated": "2026-04-16T00:00:17Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "H-04",
