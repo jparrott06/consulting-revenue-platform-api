@@ -22,6 +22,7 @@ func mountInvoiceRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
 		handleSendInvoice(w, r, db)
 	}))))
 	mountInvoiceLineItemRoutes(mux, cfg, db)
+	mountInvoicePDFRoutes(mux, cfg, db)
 }
 
 type generateInvoiceRequest struct {

@@ -154,9 +154,23 @@ RETURNING id, organization_id, invoice_number, status, currency, subtotal_minor,
 	return InvoiceRecord{}, ErrInvoiceNotSendable
 }
 
-func loadInvoiceHeader(ctx context.Context, tx *sql.Tx, organizationID, invoiceID uuid.UUID) (InvoiceRecord, error) {
+// invoiceHeaderQuerier is implemented by *sql.DB and *sql.Tx.
+type invoiceHeaderQuerier interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+// GetInvoice returns the invoice header for the organization, or ErrInvoiceNotFound.
+func GetInvoice(ctx context.Context, db *sql.DB, organizationID, invoiceID uuid.UUID) (InvoiceRecord, error) {
+	rec, err := loadInvoiceHeader(ctx, db, organizationID, invoiceID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return InvoiceRecord{}, ErrInvoiceNotFound
+	}
+	return rec, err
+}
+
+func loadInvoiceHeader(ctx context.Context, q invoiceHeaderQuerier, organizationID, invoiceID uuid.UUID) (InvoiceRecord, error) {
 	var rec InvoiceRecord
-	err := tx.QueryRowContext(ctx, `
+	err := q.QueryRowContext(ctx, `
 SELECT id, organization_id, invoice_number, status, currency, subtotal_minor, tax_minor, total_minor, issued_at, due_at, created_at, updated_at
 FROM invoices
 WHERE id = $1 AND organization_id = $2`, invoiceID, organizationID).Scan(

@@ -79,6 +79,9 @@ func clearOptionalConfig(t *testing.T) {
 		"HTTP_WRITE_TIMEOUT_SEC",
 		"HTTP_IDLE_TIMEOUT_SEC",
 		"HTTP_SHUTDOWN_TIMEOUT_SEC",
+		"INVOICE_PDF_URL_TTL_SEC",
+		"PUBLIC_API_BASE_URL",
+		"INVOICE_PDF_TOKEN_SECRET",
 	} {
 		if err := os.Unsetenv(key); err != nil {
 			t.Fatalf("unset env %s: %v", key, err)

@@ -35,13 +35,16 @@ type HTTPConfig struct {
 
 // Config is the root app configuration.
 type Config struct {
-	Environment         string
-	DatabaseURL         string
-	JWTSigningKey       string
-	JWTAccessTTL        time.Duration
-	JWTRefreshTTL       time.Duration
-	StripeWebhookSecret string
-	HTTP                HTTPConfig
+	Environment           string
+	DatabaseURL           string
+	JWTSigningKey         string
+	JWTAccessTTL          time.Duration
+	JWTRefreshTTL         time.Duration
+	StripeWebhookSecret   string
+	InvoicePDFURLTTL      time.Duration
+	PublicAPIBaseURL      string
+	InvoicePDFTokenSecret string
+	HTTP                  HTTPConfig
 }
 
 // Load returns configuration from env vars with safe defaults for local dev.
@@ -77,13 +80,27 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	pdfURLTTLSec, err := intFromEnv("INVOICE_PDF_URL_TTL_SEC", 300)
+	if err != nil {
+		return Config{}, err
+	}
+	if pdfURLTTLSec < 60 {
+		pdfURLTTLSec = 60
+	}
+	if pdfURLTTLSec > 3600 {
+		pdfURLTTLSec = 3600
+	}
+
 	cfg := Config{
-		Environment:         environment,
-		DatabaseURL:         stringFromEnv("DATABASE_URL", ""),
-		JWTSigningKey:       stringFromEnv("JWT_SIGNING_KEY", ""),
-		JWTAccessTTL:        time.Duration(accessMin) * time.Minute,
-		JWTRefreshTTL:       time.Duration(refreshDays) * 24 * time.Hour,
-		StripeWebhookSecret: stringFromEnv("STRIPE_WEBHOOK_SECRET", ""),
+		Environment:           environment,
+		DatabaseURL:           stringFromEnv("DATABASE_URL", ""),
+		JWTSigningKey:         stringFromEnv("JWT_SIGNING_KEY", ""),
+		JWTAccessTTL:          time.Duration(accessMin) * time.Minute,
+		JWTRefreshTTL:         time.Duration(refreshDays) * 24 * time.Hour,
+		StripeWebhookSecret:   stringFromEnv("STRIPE_WEBHOOK_SECRET", ""),
+		InvoicePDFURLTTL:      time.Duration(pdfURLTTLSec) * time.Second,
+		PublicAPIBaseURL:      strings.TrimRight(strings.TrimSpace(stringFromEnv("PUBLIC_API_BASE_URL", "")), "/"),
+		InvoicePDFTokenSecret: stringFromEnv("INVOICE_PDF_TOKEN_SECRET", ""),
 		HTTP: HTTPConfig{
 			Addr:            stringFromEnv("HTTP_ADDR", defaultHTTPAddr),
 			ReadTimeout:     time.Duration(readTimeoutSec) * time.Second,
