@@ -36,22 +36,20 @@ func Build(h Header, lines []Line) ([]byte, error) {
 	pdf.SetFont("Helvetica", "", 10)
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Invoice #%d\n", h.InvoiceNumber))
-	sb.WriteString(fmt.Sprintf("Status: %s  Currency: %s\n", h.Status, h.Currency))
+	_, _ = fmt.Fprintf(&sb, "Invoice #%d\n", h.InvoiceNumber)
+	_, _ = fmt.Fprintf(&sb, "Status: %s  Currency: %s\n", h.Status, h.Currency)
 	if h.IssuedAt != nil {
-		sb.WriteString("Issued: ")
-		sb.WriteString(h.IssuedAt.UTC().Format(time.RFC3339))
-		sb.WriteByte('\n')
+		_, _ = fmt.Fprintf(&sb, "Issued: %s\n", h.IssuedAt.UTC().Format(time.RFC3339))
 	}
-	sb.WriteString("\n")
+	sb.WriteByte('\n')
 	for _, ln := range lines {
-		sb.WriteString(fmt.Sprintf("%s | qty %s | unit %s | line %s\n",
-			ln.Description, ln.Quantity, ln.UnitDisplay, ln.LineDisplay))
+		_, _ = fmt.Fprintf(&sb, "%s | qty %s | unit %s | line %s\n",
+			ln.Description, ln.Quantity, ln.UnitDisplay, ln.LineDisplay)
 	}
-	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("Subtotal: %s\n", h.SubtotalDisp))
-	sb.WriteString(fmt.Sprintf("Tax: %s\n", h.TaxDisp))
-	sb.WriteString(fmt.Sprintf("Total: %s\n", h.TotalDisp))
+	sb.WriteByte('\n')
+	_, _ = fmt.Fprintf(&sb, "Subtotal: %s\n", h.SubtotalDisp)
+	_, _ = fmt.Fprintf(&sb, "Tax: %s\n", h.TaxDisp)
+	_, _ = fmt.Fprintf(&sb, "Total: %s\n", h.TotalDisp)
 
 	pdf.MultiCell(0, 5, sanitizePDFText(sb.String()), "", "L", false)
 	if err := pdf.Error(); err != nil {
