@@ -36,6 +36,21 @@ func TestAuthSessionsMigrationFilesExist(t *testing.T) {
 	}
 }
 
+func TestClientsMigrationFilesExist(t *testing.T) {
+	t.Parallel()
+
+	paths := []string{
+		filepath.Join("000005_clients.up.sql"),
+		filepath.Join("000005_clients.down.sql"),
+	}
+
+	for _, p := range paths {
+		if _, err := os.Stat(p); err != nil {
+			t.Fatalf("expected migration file %s to exist: %v", p, err)
+		}
+	}
+}
+
 func TestJobsDeadLetterMigrationFilesExist(t *testing.T) {
 	t.Parallel()
 

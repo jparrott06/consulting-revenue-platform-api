@@ -22,6 +22,7 @@ func NewHandler(cfg config.Config, db *sql.DB) http.Handler {
 	mux.Handle("GET /v1/admin/ping", requireTenantAuth(cfg, db, requireRole(authz.ActionAdminOps, http.HandlerFunc(adminPingHandler))))
 
 	mountMembershipRoutes(mux, cfg, db)
+	mountClientRoutes(mux, cfg, db)
 
 	return chain(
 		mux,
