@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +30,35 @@ func mountTimeEntryRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
 	mux.Handle("PATCH /v1/time-entries/{timeEntryID}", requireTenantAuth(cfg, db, requireRole(authz.ActionTimeEntryWrite, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlePatchTimeEntry(w, r, db)
 	}))))
+
+	mountTimeEntryBulkRoutes(mux, cfg, db)
+}
+
+func decodeTimeEntryCursor(raw string) (*repo.TimeEntryCursor, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	parts := strings.Split(raw, "|")
+	if len(parts) != 2 {
+		return nil, errors.New("cursor must have work_date|id format")
+	}
+	wd, err := time.Parse("2006-01-02", parts[0])
+	if err != nil {
+		return nil, errors.New("cursor work_date must be YYYY-MM-DD")
+	}
+	id, err := uuid.Parse(parts[1])
+	if err != nil {
+		return nil, errors.New("cursor id must be UUID")
+	}
+	return &repo.TimeEntryCursor{WorkDate: wd, ID: id}, nil
+}
+
+func encodeTimeEntryCursor(c *repo.TimeEntryCursor) string {
+	if c == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s|%s", c.WorkDate.Format("2006-01-02"), c.ID.String())
 }
 
 func handleListTimeEntries(w http.ResponseWriter, r *http.Request, db *sql.DB) {
@@ -85,8 +116,25 @@ func handleListTimeEntries(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		}
 		filters.To = &t
 	}
+	limit := 50
+	if s := strings.TrimSpace(q.Get("limit")); s != "" {
+		n, err := strconv.Atoi(s)
+		if err != nil || n <= 0 {
+			writeError(ctx, w, http.StatusBadRequest, "validation_error", "limit must be a positive integer", nil)
+			return
+		}
+		if n > 200 {
+			n = 200
+		}
+		limit = n
+	}
+	cursor, err := decodeTimeEntryCursor(q.Get("cursor"))
+	if err != nil {
+		writeError(ctx, w, http.StatusBadRequest, "validation_error", err.Error(), nil)
+		return
+	}
 
-	items, err := repo.ListTimeEntries(ctx, db, p.OrganizationID, filters)
+	items, nextCursor, err := repo.ListTimeEntriesPage(ctx, db, p.OrganizationID, filters, cursor, limit)
 	if err != nil {
 		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not list time entries", nil)
 		return
@@ -123,7 +171,12 @@ func handleListTimeEntries(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		}
 		out = append(out, rw)
 	}
-	writeJSON(w, http.StatusOK, out)
+
+	payload := map[string]any{"items": out}
+	if nextCursor != nil {
+		payload["next_cursor"] = encodeTimeEntryCursor(nextCursor)
+	}
+	writeJSON(w, http.StatusOK, payload)
 }
 
 type createTimeEntryRequest struct {
