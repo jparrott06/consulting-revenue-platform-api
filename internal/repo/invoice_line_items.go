@@ -158,7 +158,7 @@ func parseQuantityHundredths(raw string) (int64, string, error) {
 		return 0, "", err
 	}
 	frac := int64(0)
-	fracDisplay := "00"
+	fracDisplay := ""
 	if len(parts) == 2 {
 		fracDisplay = parts[1]
 		if len(fracDisplay) == 1 {
