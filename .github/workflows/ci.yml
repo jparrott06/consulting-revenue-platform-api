@@ -215,4 +215,6 @@ jobs:
           cache: true
 
       - name: Run govulncheck
-        run: go run golang.org/x/vuln/cmd/govulncheck@v1.0.4 ./...
+        env:
+          GOTOOLCHAIN: auto
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
