@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -107,12 +109,19 @@ FOR UPDATE`, organizationID, params.FromDate, params.ToDate)
 
 	var subtotal int64
 	for _, it := range selected {
-		lineTotal := int64(it.Minutes) * it.Rate / 60
+		m := int64(it.Minutes)
+		if m > 0 && it.Rate > math.MaxInt64/m {
+			return InvoiceRecord{}, errors.New("line amount overflow")
+		}
+		lineTotal := (m*it.Rate + 30) / 60
+		if lineTotal > 0 && subtotal > math.MaxInt64-lineTotal {
+			return InvoiceRecord{}, errors.New("invoice total overflow")
+		}
 		subtotal += lineTotal
 		desc := it.WorkDate.Format("2006-01-02") + " approved work"
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO invoice_line_items (invoice_id, organization_id, source_time_entry_id, description, quantity, unit_amount_minor, line_total_minor)
-VALUES ($1, $2, $3, $4, $5, $6, $7)`, invoice.ID, organizationID, it.ID, desc, float64(it.Minutes)/60.0, it.Rate, lineTotal); err != nil {
+VALUES ($1, $2, $3, $4, $5, $6, $7)`, invoice.ID, organizationID, it.ID, desc, formatHoursHundredths(it.Minutes), it.Rate, lineTotal); err != nil {
 			return InvoiceRecord{}, err
 		}
 		if _, err := tx.ExecContext(ctx, `
@@ -135,4 +144,11 @@ WHERE id = $2 AND organization_id = $3`, subtotal, invoice.ID, organizationID); 
 		return InvoiceRecord{}, err
 	}
 	return invoice, nil
+}
+
+func formatHoursHundredths(minutes int) string {
+	hundredths := (minutes*100 + 30) / 60
+	whole := hundredths / 100
+	frac := hundredths % 100
+	return fmt.Sprintf("%d.%02d", whole, frac)
 }

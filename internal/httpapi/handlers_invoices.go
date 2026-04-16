@@ -86,7 +86,7 @@ func handleGenerateInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	if err != nil {
 		msg := err.Error()
-		if strings.Contains(msg, "currency must be") {
+		if strings.Contains(msg, "currency") || strings.Contains(msg, "overflow") || errors.Is(err, repo.ErrUnsupportedCurrency) {
 			writeError(ctx, w, http.StatusBadRequest, "validation_error", msg, nil)
 			return
 		}
