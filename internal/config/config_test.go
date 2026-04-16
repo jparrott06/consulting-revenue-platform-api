@@ -82,6 +82,7 @@ func clearOptionalConfig(t *testing.T) {
 		"INVOICE_PDF_URL_TTL_SEC",
 		"PUBLIC_API_BASE_URL",
 		"INVOICE_PDF_TOKEN_SECRET",
+		"STRIPE_SECRET_KEY",
 	} {
 		if err := os.Unsetenv(key); err != nil {
 			t.Fatalf("unset env %s: %v", key, err)

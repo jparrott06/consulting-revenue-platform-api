@@ -41,6 +41,7 @@ type Config struct {
 	JWTAccessTTL          time.Duration
 	JWTRefreshTTL         time.Duration
 	StripeWebhookSecret   string
+	StripeSecretKey       string
 	InvoicePDFURLTTL      time.Duration
 	PublicAPIBaseURL      string
 	InvoicePDFTokenSecret string
@@ -98,6 +99,7 @@ func Load() (Config, error) {
 		JWTAccessTTL:          time.Duration(accessMin) * time.Minute,
 		JWTRefreshTTL:         time.Duration(refreshDays) * 24 * time.Hour,
 		StripeWebhookSecret:   stringFromEnv("STRIPE_WEBHOOK_SECRET", ""),
+		StripeSecretKey:       stringFromEnv("STRIPE_SECRET_KEY", ""),
 		InvoicePDFURLTTL:      time.Duration(pdfURLTTLSec) * time.Second,
 		PublicAPIBaseURL:      strings.TrimRight(strings.TrimSpace(stringFromEnv("PUBLIC_API_BASE_URL", "")), "/"),
 		InvoicePDFTokenSecret: stringFromEnv("INVOICE_PDF_TOKEN_SECRET", ""),
