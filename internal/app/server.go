@@ -21,7 +21,7 @@ func Run(ctx context.Context, cfg config.Config) error {
 		if err != nil {
 			return fmt.Errorf("database connectivity check failed: %w", err)
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		pool = conn
 	}
 

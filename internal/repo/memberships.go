@@ -67,7 +67,7 @@ ORDER BY m.created_at ASC`, organizationID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []MembershipListItem
 	for rows.Next() {
