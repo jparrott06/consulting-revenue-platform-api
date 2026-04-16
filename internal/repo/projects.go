@@ -92,7 +92,7 @@ ORDER BY created_at ASC, id ASC`, organizationID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []ProjectRecord
 	for rows.Next() {
