@@ -12,6 +12,7 @@ const (
 	ActionProjectWrite    = "project.write"
 	ActionTimeEntryRead   = "time_entry.read"
 	ActionTimeEntryWrite  = "time_entry.write"
+	ActionInvoiceWrite    = "invoice.write"
 )
 
 // RoleAllows returns whether a membership role may perform an action.
@@ -37,6 +38,8 @@ func RoleAllows(role, action string) bool {
 		return role == "owner" || role == "accountant" || role == "contractor"
 	case ActionTimeEntryWrite:
 		return role == "owner" || role == "accountant" || role == "contractor"
+	case ActionInvoiceWrite:
+		return role == "owner" || role == "accountant"
 	default:
 		return false
 	}
