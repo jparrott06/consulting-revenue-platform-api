@@ -36,6 +36,21 @@ func TestAuthSessionsMigrationFilesExist(t *testing.T) {
 	}
 }
 
+func TestWebhookEventsAttemptMigrationFilesExist(t *testing.T) {
+	t.Parallel()
+
+	paths := []string{
+		filepath.Join("000013_webhook_events_attempt.up.sql"),
+		filepath.Join("000013_webhook_events_attempt.down.sql"),
+	}
+
+	for _, p := range paths {
+		if _, err := os.Stat(p); err != nil {
+			t.Fatalf("expected migration file %s to exist: %v", p, err)
+		}
+	}
+}
+
 func TestWebhookEventsMigrationFilesExist(t *testing.T) {
 	t.Parallel()
 

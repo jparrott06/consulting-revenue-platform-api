@@ -83,6 +83,9 @@ func clearOptionalConfig(t *testing.T) {
 		"PUBLIC_API_BASE_URL",
 		"INVOICE_PDF_TOKEN_SECRET",
 		"STRIPE_SECRET_KEY",
+		"WEBHOOK_WORKER_ENABLED",
+		"WEBHOOK_WORKER_POLL_INTERVAL_SEC",
+		"WEBHOOK_WORKER_MAX_ATTEMPTS",
 	} {
 		if err := os.Unsetenv(key); err != nil {
 			t.Fatalf("unset env %s: %v", key, err)

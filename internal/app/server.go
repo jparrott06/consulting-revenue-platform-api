@@ -11,6 +11,7 @@ import (
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/db"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/httpapi"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/webhookworker"
 )
 
 // Run starts the HTTP server and blocks until context cancellation.
@@ -31,6 +32,14 @@ func Run(ctx context.Context, cfg config.Config) error {
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
+	}
+
+	if pool != nil && cfg.WebhookWorkerEnabled {
+		go func() {
+			if err := webhookworker.Run(ctx, cfg, pool); err != nil && !errors.Is(err, context.Canceled) {
+				log.Printf("webhook worker exited: %v", err)
+			}
+		}()
 	}
 
 	errCh := make(chan error, 1)
