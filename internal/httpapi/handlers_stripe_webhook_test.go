@@ -55,6 +55,7 @@ func TestStripeWebhook_ValidSignaturePersisted(t *testing.T) {
 	mock.ExpectExec(`INSERT INTO webhook_events`).
 		WithArgs("evt_test_webhook_1", "payment_intent.succeeded", sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(`INSERT INTO audit_logs`).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	req := httptest.NewRequest(http.MethodPost, "/webhooks/stripe", bytes.NewReader(sp.Payload))
 	req.Header.Set("Stripe-Signature", sp.Header)

@@ -146,7 +146,22 @@ WHERE id = $3`,
 	if in.StripePaymentIntentID != "" {
 		meta["stripe_payment_intent_event"] = strings.TrimSpace(in.StripePaymentIntentID)
 	}
-	return InsertLedgerEntryTx(ctx, tx, inv.OrganizationID, LedgerEventPaymentCaptured, LedgerEntityPayment, pay.ID, pay.AmountMinor, inv.Currency, meta)
+	if err := InsertLedgerEntryTx(ctx, tx, inv.OrganizationID, LedgerEventPaymentCaptured, LedgerEntityPayment, pay.ID, pay.AmountMinor, inv.Currency, meta); err != nil {
+		return err
+	}
+	orgID := inv.OrganizationID
+	invID := inv.ID
+	return InsertAuditLogTx(ctx, tx, InsertAuditLogParams{
+		OrganizationID: &orgID,
+		Action:         "invoice.paid",
+		EntityType:     "invoice",
+		EntityID:       &invID,
+		Metadata: map[string]any{
+			"amount_minor": pay.AmountMinor,
+			"currency":     inv.Currency,
+			"source":       "stripe",
+		},
+	})
 }
 
 func nullStringSQL(s string) interface{} {

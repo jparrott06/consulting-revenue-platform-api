@@ -140,6 +140,19 @@ func handleCreateMembership(w http.ResponseWriter, r *http.Request, db *sql.DB) 
 		return
 	}
 
+	mid := id
+	logAudit(ctx, db, repo.InsertAuditLogParams{
+		OrganizationID: &p.OrganizationID,
+		ActorUserID:    &p.UserID,
+		Action:         "membership.created",
+		EntityType:     "membership",
+		EntityID:       &mid,
+		Metadata: map[string]any{
+			"target_user_id": targetUser.String(),
+			"role":           strings.TrimSpace(req.Role),
+		},
+	})
+
 	writeJSON(w, http.StatusCreated, map[string]string{
 		"id": id.String(),
 	})
@@ -179,10 +192,12 @@ func handlePatchMembership(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	if _, errGet := repo.GetMembershipInOrganization(ctx, db, p.OrganizationID, membershipID); errors.Is(errGet, repo.ErrMembershipNotFound) {
+	prev, errGet := repo.GetMembershipInOrganization(ctx, db, p.OrganizationID, membershipID)
+	if errors.Is(errGet, repo.ErrMembershipNotFound) {
 		writeError(ctx, w, http.StatusNotFound, "not_found", "membership not found", nil)
 		return
-	} else if errGet != nil {
+	}
+	if errGet != nil {
 		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not load membership", nil)
 		return
 	}
@@ -204,6 +219,21 @@ func handlePatchMembership(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not update membership", nil)
 		return
 	}
+
+	mid := membershipID
+	fromRole := prev.Role
+	toRole := strings.TrimSpace(req.Role)
+	logAudit(ctx, db, repo.InsertAuditLogParams{
+		OrganizationID: &p.OrganizationID,
+		ActorUserID:    &p.UserID,
+		Action:         "membership.role_updated",
+		EntityType:     "membership",
+		EntityID:       &mid,
+		Metadata: map[string]any{
+			"from_role": fromRole,
+			"to_role":   toRole,
+		},
+	})
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -227,6 +257,16 @@ func handleDeleteMembership(w http.ResponseWriter, r *http.Request, db *sql.DB) 
 		return
 	}
 
+	prev, errLoad := repo.GetMembershipInOrganization(ctx, db, p.OrganizationID, membershipID)
+	if errors.Is(errLoad, repo.ErrMembershipNotFound) {
+		writeError(ctx, w, http.StatusNotFound, "not_found", "membership not found", nil)
+		return
+	}
+	if errLoad != nil {
+		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not load membership", nil)
+		return
+	}
+
 	err = repo.DeleteMembership(ctx, db, p.OrganizationID, membershipID)
 	if errors.Is(err, repo.ErrLastOwnerProtected) {
 		writeError(ctx, w, http.StatusConflict, "conflict", "cannot remove the last active owner", nil)
@@ -240,6 +280,18 @@ func handleDeleteMembership(w http.ResponseWriter, r *http.Request, db *sql.DB) 
 		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not delete membership", nil)
 		return
 	}
+
+	mid := membershipID
+	logAudit(ctx, db, repo.InsertAuditLogParams{
+		OrganizationID: &p.OrganizationID,
+		ActorUserID:    &p.UserID,
+		Action:         "membership.removed",
+		EntityType:     "membership",
+		EntityID:       &mid,
+		Metadata: map[string]any{
+			"removed_user_id": prev.UserID.String(),
+		},
+	})
 
 	w.WriteHeader(http.StatusNoContent)
 }

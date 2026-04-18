@@ -141,6 +141,20 @@ func handleSendInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
+	invRef := invoice.ID
+	logAudit(ctx, db, repo.InsertAuditLogParams{
+		OrganizationID: &p.OrganizationID,
+		ActorUserID:    &p.UserID,
+		Action:         "invoice.sent",
+		EntityType:     "invoice",
+		EntityID:       &invRef,
+		Metadata: map[string]any{
+			"invoice_number": invoice.InvoiceNumber,
+			"from_status":    "draft",
+			"to_status":      invoice.Status,
+		},
+	})
+
 	out := map[string]any{
 		"id":             invoice.ID.String(),
 		"invoice_number": invoice.InvoiceNumber,

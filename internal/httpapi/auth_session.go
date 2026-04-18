@@ -57,6 +57,11 @@ func authHandlers(cfg config.Config, db *sql.DB) (login, refresh, logout http.Ha
 
 		user, err := repo.GetUserAuthByEmail(ctx, db, req.Email)
 		if errors.Is(err, repo.ErrUserNotFound) {
+			logAudit(ctx, db, repo.InsertAuditLogParams{
+				Action:     "auth.login",
+				EntityType: "session",
+				Metadata:   map[string]any{"result": "failure"},
+			})
 			writeError(ctx, w, http.StatusUnauthorized, "invalid_credentials", "invalid email or password", nil)
 			return
 		}
@@ -66,6 +71,11 @@ func authHandlers(cfg config.Config, db *sql.DB) (login, refresh, logout http.Ha
 		}
 
 		if err := auth.CheckPassword(user.PasswordHash, req.Password); err != nil {
+			logAudit(ctx, db, repo.InsertAuditLogParams{
+				Action:     "auth.login",
+				EntityType: "session",
+				Metadata:   map[string]any{"result": "failure"},
+			})
 			writeError(ctx, w, http.StatusUnauthorized, "invalid_credentials", "invalid email or password", nil)
 			return
 		}
@@ -89,6 +99,16 @@ func authHandlers(cfg config.Config, db *sql.DB) (login, refresh, logout http.Ha
 			writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not issue access token", nil)
 			return
 		}
+
+		uid := user.ID
+		sid := sessionID
+		logAudit(ctx, db, repo.InsertAuditLogParams{
+			ActorUserID: &uid,
+			Action:      "auth.login",
+			EntityType:  "session",
+			EntityID:    &sid,
+			Metadata:    map[string]any{"result": "success"},
+		})
 
 		writeJSON(w, http.StatusOK, tokenResponse{
 			AccessToken:  access,
@@ -148,6 +168,16 @@ func authHandlers(cfg config.Config, db *sql.DB) (login, refresh, logout http.Ha
 			return
 		}
 
+		actor := sess.UserID
+		sid := sess.ID
+		logAudit(ctx, db, repo.InsertAuditLogParams{
+			ActorUserID: &actor,
+			Action:      "auth.refresh",
+			EntityType:  "session",
+			EntityID:    &sid,
+			Metadata:    map[string]any{"result": "success"},
+		})
+
 		writeJSON(w, http.StatusOK, tokenResponse{
 			AccessToken:  access,
 			RefreshToken: newRefresh,
@@ -204,6 +234,16 @@ func authHandlers(cfg config.Config, db *sql.DB) (login, refresh, logout http.Ha
 			writeError(ctx, w, http.StatusInternalServerError, "internal_error", "logout failed", nil)
 			return
 		}
+
+		actor := uid
+		sid := sessionID
+		logAudit(ctx, db, repo.InsertAuditLogParams{
+			ActorUserID: &actor,
+			Action:      "auth.logout",
+			EntityType:  "session",
+			EntityID:    &sid,
+			Metadata:    map[string]any{"result": "success"},
+		})
 
 		w.WriteHeader(http.StatusNoContent)
 	}
