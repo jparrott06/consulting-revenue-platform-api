@@ -165,6 +165,10 @@ jobs:
         if: steps.detect.outputs.has_go == 'true'
         run: go build ./...
 
+      - name: Docker build
+        if: steps.detect.outputs.has_go == 'true'
+        run: docker build -t consulting-revenue-platform-api:ci .
+
       - name: Skip build (no Go module yet)
         if: steps.detect.outputs.has_go != 'true'
         run: echo "No go.mod present yet; build skipped."

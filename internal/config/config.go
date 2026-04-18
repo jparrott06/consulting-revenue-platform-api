@@ -37,6 +37,10 @@ type HTTPConfig struct {
 type Config struct {
 	Environment               string
 	DatabaseURL               string
+	CORSAllowedOrigins        []string
+	RateLimitAuthPerMinute    int
+	RateLimitDefaultPerMinute int
+	RateLimitWebhookPerMinute int
 	JWTSigningKey             string
 	JWTAccessTTL              time.Duration
 	JWTRefreshTTL             time.Duration
@@ -114,9 +118,28 @@ func Load() (Config, error) {
 		webhookMaxAttempts = 2
 	}
 
+	rateAuth, err := intFromEnv("RATE_LIMIT_AUTH_PER_MIN", 30)
+	if err != nil {
+		return Config{}, err
+	}
+	rateDef, err := intFromEnv("RATE_LIMIT_DEFAULT_PER_MIN", 200)
+	if err != nil {
+		return Config{}, err
+	}
+	rateWH, err := intFromEnv("RATE_LIMIT_WEBHOOK_PER_MIN", 120)
+	if err != nil {
+		return Config{}, err
+	}
+
+	corsOrigins := parseOriginList(strings.TrimSpace(stringFromEnv("CORS_ALLOWED_ORIGINS", "")))
+
 	cfg := Config{
 		Environment:               environment,
 		DatabaseURL:               stringFromEnv("DATABASE_URL", ""),
+		CORSAllowedOrigins:        corsOrigins,
+		RateLimitAuthPerMinute:    rateAuth,
+		RateLimitDefaultPerMinute: rateDef,
+		RateLimitWebhookPerMinute: rateWH,
 		JWTSigningKey:             stringFromEnv("JWT_SIGNING_KEY", ""),
 		JWTAccessTTL:              time.Duration(accessMin) * time.Minute,
 		JWTRefreshTTL:             time.Duration(refreshDays) * 24 * time.Hour,
@@ -180,6 +203,21 @@ func boolFromEnv(key string, fallback bool) bool {
 func isValidEnvironment(value string) bool {
 	_, ok := validEnvironments[value]
 	return ok
+}
+
+func parseOriginList(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func validateRequired(cfg Config) error {
