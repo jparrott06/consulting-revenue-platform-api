@@ -86,6 +86,10 @@ func clearOptionalConfig(t *testing.T) {
 		"WEBHOOK_WORKER_ENABLED",
 		"WEBHOOK_WORKER_POLL_INTERVAL_SEC",
 		"WEBHOOK_WORKER_MAX_ATTEMPTS",
+		"CORS_ALLOWED_ORIGINS",
+		"RATE_LIMIT_AUTH_PER_MIN",
+		"RATE_LIMIT_DEFAULT_PER_MIN",
+		"RATE_LIMIT_WEBHOOK_PER_MIN",
 	} {
 		if err := os.Unsetenv(key); err != nil {
 			t.Fatalf("unset env %s: %v", key, err)

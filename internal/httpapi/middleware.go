@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"log"
 	"net/http"
 	"time"
 )
@@ -40,7 +39,11 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				log.Printf("panic recovered request_id=%s method=%s path=%s", requestIDFromContext(r.Context()), r.Method, r.URL.Path)
+				accessLogger.Error("panic recovered",
+					"request_id", requestIDFromContext(r.Context()),
+					"method", r.Method,
+					"path", r.URL.Path,
+				)
 				writeError(r.Context(), w, http.StatusInternalServerError, "internal_error", "internal server error", nil)
 			}
 		}()
@@ -50,23 +53,6 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 
 func timeoutMiddleware(next http.Handler) http.Handler {
 	return http.TimeoutHandler(next, requestTimeout, `{"code":"request_timeout","message":"request timed out","request_id":""}`+"\n")
-}
-
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		started := time.Now()
-		rec := &statusRecorder{ResponseWriter: w, statusCode: http.StatusOK}
-		next.ServeHTTP(rec, r)
-		log.Printf(
-			"http_request request_id=%s method=%s path=%s status=%d duration_ms=%d bytes=%d",
-			requestIDFromContext(r.Context()),
-			r.Method,
-			r.URL.Path,
-			rec.statusCode,
-			time.Since(started).Milliseconds(),
-			rec.bytesWritten,
-		)
-	})
 }
 
 func requestIDFromContext(ctx context.Context) string {

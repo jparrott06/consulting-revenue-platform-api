@@ -6,13 +6,18 @@ import (
 
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/authz"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // NewHandler returns the root HTTP router for the API.
 func NewHandler(cfg config.Config, db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
 	login, refresh, logout := authHandlers(cfg, db)
-	mux.HandleFunc("GET /healthz", healthHandler)
+	mux.HandleFunc("GET /healthz", liveHandler)
+	mux.HandleFunc("GET /livez", liveHandler)
+	mux.HandleFunc("GET /readyz", readyHandler(db))
+	mux.Handle("GET /metrics", promhttp.Handler())
 	mountStripeWebhookRoute(mux, cfg, db)
 	mux.HandleFunc("POST /auth/register", registerHandler(db))
 	mux.HandleFunc("POST /auth/login", login)
@@ -32,15 +37,15 @@ func NewHandler(cfg config.Config, db *sql.DB) http.Handler {
 	mountAuditRoutes(mux, cfg, db)
 	mountPublicDocumentRoutes(mux, cfg, db)
 
-	return chain(
+	h := chain(
 		mux,
 		requestIDMiddleware,
 		recoveryMiddleware,
+		securityHeadersMiddleware,
+		corsMiddleware(cfg),
+		rateLimitMiddleware(cfg),
 		timeoutMiddleware,
-		loggingMiddleware,
+		observabilityMiddleware,
 	)
-}
-
-func healthHandler(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	return otelhttp.NewHandler(h, "api")
 }
