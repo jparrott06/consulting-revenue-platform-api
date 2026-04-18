@@ -8,10 +8,22 @@ import (
 )
 
 // handleStripeWebhook applies business logic for a locked webhook row.
-// E-04 will reconcile invoices/payments from payload; until then this is a durable no-op.
 func handleStripeWebhook(ctx context.Context, tx *sql.Tx, row repo.StripeWebhookEventRow) error {
-	_ = ctx
-	_ = tx
-	_ = row
-	return nil
+	in, disp, err := parseStripePaidReconcileInput(row.PayloadJSON)
+	if err != nil {
+		return err
+	}
+	switch disp {
+	case stripePaidSkipSilent:
+		return nil
+	case stripePaidApply:
+		invID, err := repo.ResolveStripePaidInvoiceID(ctx, tx, in.MetadataInvoiceID, in.StripePaymentLinkID)
+		if err != nil {
+			return err
+		}
+		in.InvoiceID = invID
+		return repo.ReconcileStripePaymentPaid(ctx, tx, in)
+	default:
+		return nil
+	}
 }
