@@ -15,6 +15,7 @@ const (
 	ActionInvoiceWrite    = "invoice.write"
 	ActionLedgerRead      = "ledger.read"
 	ActionAuditRead       = "audit.read"
+	ActionReportRead      = "report.read"
 )
 
 // RoleAllows returns whether a membership role may perform an action.
@@ -45,6 +46,8 @@ func RoleAllows(role, action string) bool {
 	case ActionLedgerRead:
 		return role == "owner" || role == "accountant"
 	case ActionAuditRead:
+		return role == "owner" || role == "accountant"
+	case ActionReportRead:
 		return role == "owner" || role == "accountant"
 	default:
 		return false
