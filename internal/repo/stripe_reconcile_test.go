@@ -72,8 +72,8 @@ func TestReconcileStripePaymentPaid_IssuedHappyPath(t *testing.T) {
 
 	payRows := sqlmock.NewRows([]string{
 		"id", "organization_id", "invoice_id", "stripe_payment_link_id", "stripe_checkout_session_id", "stripe_payment_intent_id",
-		"payment_url", "amount_minor", "currency", "idempotency_key", "created_at", "updated_at",
-	}).AddRow(payID, orgID, invID, linkID, nil, nil, "https://pay.example", int64(5000), "USD", "key", time.Now(), time.Now())
+		"payment_url", "amount_minor", "currency", "idempotency_key", "refunded_amount_minor", "last_stripe_failure_code", "created_at", "updated_at",
+	}).AddRow(payID, orgID, invID, linkID, nil, nil, "https://pay.example", int64(5000), "USD", "key", int64(0), sql.NullString{}, time.Now(), time.Now())
 	mock.ExpectQuery(`FROM payments`).WithArgs(orgID, invID).WillReturnRows(payRows)
 
 	mock.ExpectExec(`UPDATE invoices`).WithArgs(invID, orgID).WillReturnResult(sqlmock.NewResult(0, 1))
@@ -126,8 +126,8 @@ func TestReconcileStripePaymentPaid_CurrencyMismatch(t *testing.T) {
 
 	payRows := sqlmock.NewRows([]string{
 		"id", "organization_id", "invoice_id", "stripe_payment_link_id", "stripe_checkout_session_id", "stripe_payment_intent_id",
-		"payment_url", "amount_minor", "currency", "idempotency_key", "created_at", "updated_at",
-	}).AddRow(payID, orgID, invID, "plink_x", nil, nil, "https://pay.example", int64(100), "USD", "key", time.Now(), time.Now())
+		"payment_url", "amount_minor", "currency", "idempotency_key", "refunded_amount_minor", "last_stripe_failure_code", "created_at", "updated_at",
+	}).AddRow(payID, orgID, invID, "plink_x", nil, nil, "https://pay.example", int64(100), "USD", "key", int64(0), sql.NullString{}, time.Now(), time.Now())
 	mock.ExpectQuery(`FROM payments`).WithArgs(orgID, invID).WillReturnRows(payRows)
 
 	ctx := context.Background()

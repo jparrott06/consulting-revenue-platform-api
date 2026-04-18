@@ -9,6 +9,17 @@ import (
 
 // handleStripeWebhook applies business logic for a locked webhook row.
 func handleStripeWebhook(ctx context.Context, tx *sql.Tx, row repo.StripeWebhookEventRow) error {
+	if handled, err := tryApplyStripeRefund(ctx, tx, row.PayloadJSON); err != nil {
+		return err
+	} else if handled {
+		return nil
+	}
+	if handled, err := tryRecordStripePaymentFailure(ctx, tx, row.PayloadJSON); err != nil {
+		return err
+	} else if handled {
+		return nil
+	}
+
 	in, disp, err := parseStripePaidReconcileInput(row.PayloadJSON)
 	if err != nil {
 		return err
