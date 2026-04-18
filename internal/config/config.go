@@ -35,17 +35,20 @@ type HTTPConfig struct {
 
 // Config is the root app configuration.
 type Config struct {
-	Environment           string
-	DatabaseURL           string
-	JWTSigningKey         string
-	JWTAccessTTL          time.Duration
-	JWTRefreshTTL         time.Duration
-	StripeWebhookSecret   string
-	StripeSecretKey       string
-	InvoicePDFURLTTL      time.Duration
-	PublicAPIBaseURL      string
-	InvoicePDFTokenSecret string
-	HTTP                  HTTPConfig
+	Environment               string
+	DatabaseURL               string
+	JWTSigningKey             string
+	JWTAccessTTL              time.Duration
+	JWTRefreshTTL             time.Duration
+	StripeWebhookSecret       string
+	StripeSecretKey           string
+	InvoicePDFURLTTL          time.Duration
+	PublicAPIBaseURL          string
+	InvoicePDFTokenSecret     string
+	WebhookWorkerEnabled      bool
+	WebhookWorkerPollInterval time.Duration
+	WebhookWorkerMaxAttempts  int
+	HTTP                      HTTPConfig
 }
 
 // Load returns configuration from env vars with safe defaults for local dev.
@@ -92,17 +95,39 @@ func Load() (Config, error) {
 		pdfURLTTLSec = 3600
 	}
 
+	webhookPollSec, err := intFromEnv("WEBHOOK_WORKER_POLL_INTERVAL_SEC", 5)
+	if err != nil {
+		return Config{}, err
+	}
+	if webhookPollSec < 1 {
+		webhookPollSec = 1
+	}
+	if webhookPollSec > 300 {
+		webhookPollSec = 300
+	}
+
+	webhookMaxAttempts, err := intFromEnv("WEBHOOK_WORKER_MAX_ATTEMPTS", 5)
+	if err != nil {
+		return Config{}, err
+	}
+	if webhookMaxAttempts < 2 {
+		webhookMaxAttempts = 2
+	}
+
 	cfg := Config{
-		Environment:           environment,
-		DatabaseURL:           stringFromEnv("DATABASE_URL", ""),
-		JWTSigningKey:         stringFromEnv("JWT_SIGNING_KEY", ""),
-		JWTAccessTTL:          time.Duration(accessMin) * time.Minute,
-		JWTRefreshTTL:         time.Duration(refreshDays) * 24 * time.Hour,
-		StripeWebhookSecret:   stringFromEnv("STRIPE_WEBHOOK_SECRET", ""),
-		StripeSecretKey:       stringFromEnv("STRIPE_SECRET_KEY", ""),
-		InvoicePDFURLTTL:      time.Duration(pdfURLTTLSec) * time.Second,
-		PublicAPIBaseURL:      strings.TrimRight(strings.TrimSpace(stringFromEnv("PUBLIC_API_BASE_URL", "")), "/"),
-		InvoicePDFTokenSecret: stringFromEnv("INVOICE_PDF_TOKEN_SECRET", ""),
+		Environment:               environment,
+		DatabaseURL:               stringFromEnv("DATABASE_URL", ""),
+		JWTSigningKey:             stringFromEnv("JWT_SIGNING_KEY", ""),
+		JWTAccessTTL:              time.Duration(accessMin) * time.Minute,
+		JWTRefreshTTL:             time.Duration(refreshDays) * 24 * time.Hour,
+		StripeWebhookSecret:       stringFromEnv("STRIPE_WEBHOOK_SECRET", ""),
+		StripeSecretKey:           stringFromEnv("STRIPE_SECRET_KEY", ""),
+		InvoicePDFURLTTL:          time.Duration(pdfURLTTLSec) * time.Second,
+		PublicAPIBaseURL:          strings.TrimRight(strings.TrimSpace(stringFromEnv("PUBLIC_API_BASE_URL", "")), "/"),
+		InvoicePDFTokenSecret:     stringFromEnv("INVOICE_PDF_TOKEN_SECRET", ""),
+		WebhookWorkerEnabled:      boolFromEnv("WEBHOOK_WORKER_ENABLED", false),
+		WebhookWorkerPollInterval: time.Duration(webhookPollSec) * time.Second,
+		WebhookWorkerMaxAttempts:  webhookMaxAttempts,
 		HTTP: HTTPConfig{
 			Addr:            stringFromEnv("HTTP_ADDR", defaultHTTPAddr),
 			ReadTimeout:     time.Duration(readTimeoutSec) * time.Second,
@@ -142,6 +167,14 @@ func stringFromEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func boolFromEnv(key string, fallback bool) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	if v == "" {
+		return fallback
+	}
+	return v == "1" || v == "true" || v == "yes" || v == "on"
 }
 
 func isValidEnvironment(value string) bool {
