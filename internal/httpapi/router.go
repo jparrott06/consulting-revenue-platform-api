@@ -36,6 +36,7 @@ func NewHandler(cfg config.Config, db *sql.DB) http.Handler {
 	mountLedgerRoutes(mux, cfg, db)
 	mountAuditRoutes(mux, cfg, db)
 	mountReportRoutes(mux, cfg, db)
+	mountExportRoutes(mux, cfg, db)
 	mountPublicDocumentRoutes(mux, cfg, db)
 
 	h := chain(
