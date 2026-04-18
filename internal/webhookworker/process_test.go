@@ -19,7 +19,7 @@ func TestProcessOne_NoPendingEvent_Rollbacks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	t.Cleanup(func() { _ = db.Close() })
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(`SELECT id, event_id`).
