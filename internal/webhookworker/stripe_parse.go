@@ -68,9 +68,6 @@ func parseStripePaidReconcileInput(payload []byte) (repo.StripePaidReconcileInpu
 	}
 
 	switch ev.Type {
-	case stripe.EventTypePaymentIntentPaymentFailed:
-		return repo.StripePaidReconcileInput{}, stripePaidSkipSilent, nil
-
 	case stripe.EventTypeCheckoutSessionCompleted:
 		var sess checkoutSessionDTO
 		if err := json.Unmarshal(ev.Data.Raw, &sess); err != nil {

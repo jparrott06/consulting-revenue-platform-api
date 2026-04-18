@@ -25,6 +25,8 @@ type PaymentRecord struct {
 	AmountMinor             int64
 	Currency                string
 	IdempotencyKey          string
+	RefundedAmountMinor     int64
+	LastStripeFailureCode   sql.NullString
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
@@ -60,7 +62,7 @@ FOR UPDATE`, invoiceID, organizationID).Scan(
 func GetPaymentByInvoiceForUpdate(ctx context.Context, tx *sql.Tx, organizationID, invoiceID uuid.UUID) (PaymentRecord, error) {
 	var r PaymentRecord
 	err := tx.QueryRowContext(ctx, `
-SELECT id, organization_id, invoice_id, stripe_payment_link_id, stripe_checkout_session_id, stripe_payment_intent_id, payment_url, amount_minor, currency, idempotency_key, created_at, updated_at
+SELECT id, organization_id, invoice_id, stripe_payment_link_id, stripe_checkout_session_id, stripe_payment_intent_id, payment_url, amount_minor, currency, idempotency_key, refunded_amount_minor, last_stripe_failure_code, created_at, updated_at
 FROM payments
 WHERE organization_id = $1 AND invoice_id = $2
 FOR UPDATE`, organizationID, invoiceID).Scan(
@@ -74,6 +76,8 @@ FOR UPDATE`, organizationID, invoiceID).Scan(
 		&r.AmountMinor,
 		&r.Currency,
 		&r.IdempotencyKey,
+		&r.RefundedAmountMinor,
+		&r.LastStripeFailureCode,
 		&r.CreatedAt,
 		&r.UpdatedAt,
 	)
@@ -89,7 +93,7 @@ func InsertPayment(ctx context.Context, tx *sql.Tx, organizationID, invoiceID uu
 	err := tx.QueryRowContext(ctx, `
 INSERT INTO payments (organization_id, invoice_id, stripe_payment_link_id, payment_url, amount_minor, currency, idempotency_key)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, organization_id, invoice_id, stripe_payment_link_id, stripe_checkout_session_id, stripe_payment_intent_id, payment_url, amount_minor, currency, idempotency_key, created_at, updated_at`,
+RETURNING id, organization_id, invoice_id, stripe_payment_link_id, stripe_checkout_session_id, stripe_payment_intent_id, payment_url, amount_minor, currency, idempotency_key, refunded_amount_minor, last_stripe_failure_code, created_at, updated_at`,
 		organizationID, invoiceID, stripePaymentLinkID, paymentURL, amountMinor, currency, idempotencyKey,
 	).Scan(
 		&r.ID,
@@ -102,6 +106,8 @@ RETURNING id, organization_id, invoice_id, stripe_payment_link_id, stripe_checko
 		&r.AmountMinor,
 		&r.Currency,
 		&r.IdempotencyKey,
+		&r.RefundedAmountMinor,
+		&r.LastStripeFailureCode,
 		&r.CreatedAt,
 		&r.UpdatedAt,
 	)
@@ -122,7 +128,7 @@ var ErrPaymentExists = errors.New("payment already exists for invoice")
 func GetPaymentByInvoice(ctx context.Context, db *sql.DB, organizationID, invoiceID uuid.UUID) (PaymentRecord, error) {
 	var r PaymentRecord
 	err := db.QueryRowContext(ctx, `
-SELECT id, organization_id, invoice_id, stripe_payment_link_id, stripe_checkout_session_id, stripe_payment_intent_id, payment_url, amount_minor, currency, idempotency_key, created_at, updated_at
+SELECT id, organization_id, invoice_id, stripe_payment_link_id, stripe_checkout_session_id, stripe_payment_intent_id, payment_url, amount_minor, currency, idempotency_key, refunded_amount_minor, last_stripe_failure_code, created_at, updated_at
 FROM payments
 WHERE organization_id = $1 AND invoice_id = $2`, organizationID, invoiceID).Scan(
 		&r.ID,
@@ -135,6 +141,8 @@ WHERE organization_id = $1 AND invoice_id = $2`, organizationID, invoiceID).Scan
 		&r.AmountMinor,
 		&r.Currency,
 		&r.IdempotencyKey,
+		&r.RefundedAmountMinor,
+		&r.LastStripeFailureCode,
 		&r.CreatedAt,
 		&r.UpdatedAt,
 	)
