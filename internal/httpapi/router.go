@@ -28,6 +28,7 @@ func NewHandler(cfg config.Config, db *sql.DB) http.Handler {
 	mountTimeEntryRoutes(mux, cfg, db)
 	mountTimeEntryWorkflowRoutes(mux, cfg, db)
 	mountInvoiceRoutes(mux, cfg, db)
+	mountLedgerRoutes(mux, cfg, db)
 	mountPublicDocumentRoutes(mux, cfg, db)
 
 	return chain(
