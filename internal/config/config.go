@@ -15,6 +15,7 @@ const (
 	defaultReadTimeoutSec  = 10
 	defaultWriteTimeoutSec = 10
 	defaultIdleTimeoutSec  = 60
+	defaultMaxRequestBody  = 4 << 20
 )
 
 var validEnvironments = map[string]struct{}{
@@ -52,6 +53,7 @@ type Config struct {
 	WebhookWorkerEnabled      bool
 	WebhookWorkerPollInterval time.Duration
 	WebhookWorkerMaxAttempts  int
+	HTTPMaxRequestBodyBytes   int64
 	HTTP                      HTTPConfig
 }
 
@@ -133,6 +135,19 @@ func Load() (Config, error) {
 
 	corsOrigins := parseOriginList(strings.TrimSpace(stringFromEnv("CORS_ALLOWED_ORIGINS", "")))
 
+	maxBodyBytes := int64(defaultMaxRequestBody)
+	if raw := strings.TrimSpace(os.Getenv("HTTP_MAX_REQUEST_BODY_BYTES")); raw != "" {
+		v, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			return Config{}, fmt.Errorf("HTTP_MAX_REQUEST_BODY_BYTES must be an integer: %w", err)
+		}
+		const minBody = 4096
+		if v < minBody {
+			return Config{}, fmt.Errorf("HTTP_MAX_REQUEST_BODY_BYTES must be at least %d", minBody)
+		}
+		maxBodyBytes = v
+	}
+
 	cfg := Config{
 		Environment:               environment,
 		DatabaseURL:               stringFromEnv("DATABASE_URL", ""),
@@ -151,6 +166,7 @@ func Load() (Config, error) {
 		WebhookWorkerEnabled:      boolFromEnv("WEBHOOK_WORKER_ENABLED", false),
 		WebhookWorkerPollInterval: time.Duration(webhookPollSec) * time.Second,
 		WebhookWorkerMaxAttempts:  webhookMaxAttempts,
+		HTTPMaxRequestBodyBytes:   maxBodyBytes,
 		HTTP: HTTPConfig{
 			Addr:            stringFromEnv("HTTP_ADDR", defaultHTTPAddr),
 			ReadTimeout:     time.Duration(readTimeoutSec) * time.Second,

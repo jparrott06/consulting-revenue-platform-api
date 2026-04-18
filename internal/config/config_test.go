@@ -21,6 +21,9 @@ func TestLoad_LocalDefaults(t *testing.T) {
 	if cfg.HTTP.Addr == "" {
 		t.Fatal("expected default HTTP address")
 	}
+	if cfg.HTTPMaxRequestBodyBytes != int64(4<<20) {
+		t.Fatalf("expected default HTTP max body 4MiB, got %d", cfg.HTTPMaxRequestBodyBytes)
+	}
 }
 
 func TestLoad_InvalidEnvironment(t *testing.T) {
@@ -50,6 +53,45 @@ func TestLoad_ProductionMissingRequired(t *testing.T) {
 		if !strings.Contains(err.Error(), key) {
 			t.Fatalf("expected missing key %s in error: %v", key, err)
 		}
+	}
+}
+
+func TestLoad_CustomMaxRequestBodyBytes(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	clearOptionalConfig(t)
+	t.Setenv("HTTP_MAX_REQUEST_BODY_BYTES", "8192")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.HTTPMaxRequestBodyBytes != 8192 {
+		t.Fatalf("expected 8192, got %d", cfg.HTTPMaxRequestBodyBytes)
+	}
+}
+
+func TestLoad_InvalidMaxRequestBodyBytes(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	clearOptionalConfig(t)
+	t.Setenv("HTTP_MAX_REQUEST_BODY_BYTES", "not-int")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "HTTP_MAX_REQUEST_BODY_BYTES") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoad_MaxRequestBodyBytesTooSmall(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	clearOptionalConfig(t)
+	t.Setenv("HTTP_MAX_REQUEST_BODY_BYTES", "1024")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error")
 	}
 }
 
@@ -90,6 +132,7 @@ func clearOptionalConfig(t *testing.T) {
 		"RATE_LIMIT_AUTH_PER_MIN",
 		"RATE_LIMIT_DEFAULT_PER_MIN",
 		"RATE_LIMIT_WEBHOOK_PER_MIN",
+		"HTTP_MAX_REQUEST_BODY_BYTES",
 	} {
 		if err := os.Unsetenv(key); err != nil {
 			t.Fatalf("unset env %s: %v", key, err)

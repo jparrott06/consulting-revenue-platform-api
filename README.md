@@ -60,6 +60,8 @@ The backlog includes stories for:
 - Optional encryption at rest for selected fields
 - Threat modeling and retention controls
 
+For a concise mapping of threats to controls and tests, see [docs/threat-model.md](docs/threat-model.md).
+
 No secrets should ever be committed. Keep all sensitive values in environment variables or a secret manager.
 
 ## How to Use This Backlog

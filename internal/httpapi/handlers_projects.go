@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -14,8 +13,6 @@ import (
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
 )
-
-const maxProjectBodyBytes = 1 << 20
 
 func mountProjectRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
 	mux.Handle("GET /v1/projects", requireTenantAuth(cfg, db, requireRole(authz.ActionProjectRead, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -100,10 +97,8 @@ func handleCreateProject(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxProjectBodyBytes)
 	var req createProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return
 	}
 
@@ -156,10 +151,8 @@ func handlePatchProject(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxProjectBodyBytes)
 	var req patchProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return
 	}
 	if req.Name == nil && req.BillingMode == nil && req.DefaultRateMinor == nil && req.Archived == nil {
