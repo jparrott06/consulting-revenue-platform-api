@@ -168,6 +168,33 @@ func GetInvoice(ctx context.Context, db *sql.DB, organizationID, invoiceID uuid.
 	return rec, err
 }
 
+// GetInvoiceByIDForUpdate loads an invoice by primary key with FOR UPDATE (webhooks / internal jobs).
+func GetInvoiceByIDForUpdate(ctx context.Context, tx *sql.Tx, invoiceID uuid.UUID) (InvoiceRecord, error) {
+	var rec InvoiceRecord
+	err := tx.QueryRowContext(ctx, `
+SELECT id, organization_id, invoice_number, status, currency, subtotal_minor, tax_minor, total_minor, issued_at, due_at, created_at, updated_at
+FROM invoices
+WHERE id = $1
+FOR UPDATE`, invoiceID).Scan(
+		&rec.ID,
+		&rec.OrganizationID,
+		&rec.InvoiceNumber,
+		&rec.Status,
+		&rec.Currency,
+		&rec.SubtotalMinor,
+		&rec.TaxMinor,
+		&rec.TotalMinor,
+		&rec.IssuedAt,
+		&rec.DueAt,
+		&rec.CreatedAt,
+		&rec.UpdatedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return InvoiceRecord{}, ErrInvoiceNotFound
+	}
+	return rec, err
+}
+
 func loadInvoiceHeader(ctx context.Context, q invoiceHeaderQuerier, organizationID, invoiceID uuid.UUID) (InvoiceRecord, error) {
 	var rec InvoiceRecord
 	err := q.QueryRowContext(ctx, `
