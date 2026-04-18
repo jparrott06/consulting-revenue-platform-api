@@ -79,6 +79,7 @@ func TestReconcileStripePaymentPaid_IssuedHappyPath(t *testing.T) {
 	mock.ExpectExec(`UPDATE invoices`).WithArgs(invID, orgID).WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`UPDATE payments`).WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), payID).WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`INSERT INTO ledger_entries`).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(`INSERT INTO audit_logs`).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	ctx := context.Background()
 	tx, err := db.BeginTx(ctx, nil)

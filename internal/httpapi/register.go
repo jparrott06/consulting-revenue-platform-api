@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/auth"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
 )
@@ -65,6 +66,19 @@ func registerHandler(db *sql.DB) http.HandlerFunc {
 		if err != nil {
 			writeError(ctx, w, http.StatusInternalServerError, "internal_error", "registration failed", nil)
 			return
+		}
+
+		if uid, errUID := uuid.Parse(userID); errUID == nil {
+			if oid, errOID := uuid.Parse(orgID); errOID == nil {
+				logAudit(ctx, db, repo.InsertAuditLogParams{
+					OrganizationID: &oid,
+					ActorUserID:    &uid,
+					Action:         "auth.register",
+					EntityType:     "user",
+					EntityID:       &uid,
+					Metadata:       map[string]any{"organization_id": oid.String()},
+				})
+			}
 		}
 
 		writeJSON(w, http.StatusCreated, registerResponse{

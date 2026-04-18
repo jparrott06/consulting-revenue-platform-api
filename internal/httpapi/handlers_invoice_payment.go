@@ -43,7 +43,7 @@ func handlePostInvoicePaymentLink(w http.ResponseWriter, r *http.Request, cfg co
 		return
 	}
 
-	rec, err := ensureInvoicePaymentLink(ctx, db, cfg, p.OrganizationID, invoiceID)
+	rec, linkCreated, err := ensureInvoicePaymentLink(ctx, db, cfg, p.OrganizationID, invoiceID)
 	if errors.Is(err, errInvoiceNotPayable) {
 		writeError(ctx, w, http.StatusConflict, "conflict", "invoice is not eligible for a payment link", nil)
 		return
@@ -57,6 +57,22 @@ func handlePostInvoicePaymentLink(w http.ResponseWriter, r *http.Request, cfg co
 		return
 	}
 
+	if linkCreated {
+		invRef := invoiceID
+		logAudit(ctx, db, repo.InsertAuditLogParams{
+			OrganizationID: &p.OrganizationID,
+			ActorUserID:    &p.UserID,
+			Action:         "payment.link_created",
+			EntityType:     "invoice",
+			EntityID:       &invRef,
+			Metadata: map[string]any{
+				"stripe_payment_link_id": rec.StripePaymentLinkID,
+				"amount_minor":           rec.AmountMinor,
+				"currency":               rec.Currency,
+			},
+		})
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"invoice_id":             rec.InvoiceID.String(),
 		"payment_url":            rec.PaymentURL,
@@ -68,53 +84,54 @@ func handlePostInvoicePaymentLink(w http.ResponseWriter, r *http.Request, cfg co
 
 var errInvoiceNotPayable = errors.New("invoice not payable")
 
-func ensureInvoicePaymentLink(ctx context.Context, db *sql.DB, cfg config.Config, organizationID, invoiceID uuid.UUID) (repo.PaymentRecord, error) {
+func ensureInvoicePaymentLink(ctx context.Context, db *sql.DB, cfg config.Config, organizationID, invoiceID uuid.UUID) (repo.PaymentRecord, bool, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return repo.PaymentRecord{}, err
+		return repo.PaymentRecord{}, false, err
 	}
 	defer func() { _ = tx.Rollback() }()
 
 	inv, err := repo.GetInvoiceForUpdate(ctx, tx, organizationID, invoiceID)
 	if err != nil {
-		return repo.PaymentRecord{}, err
+		return repo.PaymentRecord{}, false, err
 	}
 	if inv.Status != "issued" {
-		return repo.PaymentRecord{}, errInvoiceNotPayable
+		return repo.PaymentRecord{}, false, errInvoiceNotPayable
 	}
 	if inv.TotalMinor <= 0 {
-		return repo.PaymentRecord{}, errInvoiceNotPayable
+		return repo.PaymentRecord{}, false, errInvoiceNotPayable
 	}
 
 	pay, err := repo.GetPaymentByInvoiceForUpdate(ctx, tx, organizationID, invoiceID)
 	if err == nil {
 		if err := tx.Commit(); err != nil {
-			return repo.PaymentRecord{}, err
+			return repo.PaymentRecord{}, false, err
 		}
-		return pay, nil
+		return pay, false, nil
 	}
 	if !errors.Is(err, repo.ErrPaymentNotFound) {
-		return repo.PaymentRecord{}, err
+		return repo.PaymentRecord{}, false, err
 	}
 
 	idem := fmt.Sprintf("invoice_payment_link:%s", invoiceID)
 	url, linkID, err := stripepay.CreateInvoicePaymentLink(cfg.StripeSecretKey, idem, inv.Currency, inv.TotalMinor, inv.InvoiceNumber, invoiceID.String())
 	if err != nil {
-		return repo.PaymentRecord{}, err
+		return repo.PaymentRecord{}, false, err
 	}
 
 	pay, err = repo.InsertPayment(ctx, tx, organizationID, invoiceID, linkID, url, inv.TotalMinor, inv.Currency, idem)
 	if errors.Is(err, repo.ErrPaymentExists) {
 		if err := tx.Rollback(); err != nil {
-			return repo.PaymentRecord{}, err
+			return repo.PaymentRecord{}, false, err
 		}
-		return repo.GetPaymentByInvoice(ctx, db, organizationID, invoiceID)
+		rec, err := repo.GetPaymentByInvoice(ctx, db, organizationID, invoiceID)
+		return rec, false, err
 	}
 	if err != nil {
-		return repo.PaymentRecord{}, err
+		return repo.PaymentRecord{}, false, err
 	}
 	if err := tx.Commit(); err != nil {
-		return repo.PaymentRecord{}, err
+		return repo.PaymentRecord{}, false, err
 	}
-	return pay, nil
+	return pay, true, nil
 }

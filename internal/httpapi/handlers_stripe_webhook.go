@@ -55,6 +55,15 @@ func handleStripeWebhook(cfg config.Config, db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		logAudit(ctx, db, repo.InsertAuditLogParams{
+			Action:     "stripe.webhook.received",
+			EntityType: "stripe_event",
+			Metadata: map[string]any{
+				"event_type": string(event.Type),
+				"inserted":   inserted,
+			},
+		})
+
 		writeJSON(w, http.StatusOK, map[string]any{
 			"received": true,
 			"inserted": inserted,
