@@ -135,7 +135,18 @@ WHERE id = $3`,
 		nullStringSQL(in.StripePaymentIntentID),
 		pay.ID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	meta := map[string]any{"invoice_id": inv.ID.String()}
+	if pay.StripePaymentIntentID.Valid {
+		meta["stripe_payment_intent_id"] = strings.TrimSpace(pay.StripePaymentIntentID.String)
+	}
+	if in.StripePaymentIntentID != "" {
+		meta["stripe_payment_intent_event"] = strings.TrimSpace(in.StripePaymentIntentID)
+	}
+	return InsertLedgerEntryTx(ctx, tx, inv.OrganizationID, LedgerEventPaymentCaptured, LedgerEntityPayment, pay.ID, pay.AmountMinor, inv.Currency, meta)
 }
 
 func nullStringSQL(s string) interface{} {

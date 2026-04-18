@@ -126,6 +126,15 @@ RETURNING id`,
 		return err
 	}
 
+	meta := map[string]any{
+		"stripe_refund_id":         in.StripeRefundID,
+		"stripe_payment_intent_id": in.StripePaymentIntentID,
+		"invoice_id":               pay.InvoiceID.String(),
+	}
+	if err := InsertLedgerEntryTx(ctx, tx, pay.OrganizationID, LedgerEventRefundApplied, LedgerEntityPayment, pay.ID, -in.AmountMinor, pay.Currency, meta); err != nil {
+		return err
+	}
+
 	newRefunded := pay.RefundedAmountMinor + in.AmountMinor
 	_, err = tx.ExecContext(ctx, `
 UPDATE payments

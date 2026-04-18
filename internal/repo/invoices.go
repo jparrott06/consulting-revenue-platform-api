@@ -129,6 +129,11 @@ RETURNING id, organization_id, invoice_number, status, currency, subtotal_minor,
 		&rec.UpdatedAt,
 	)
 	if err == nil {
+		if err := InsertLedgerEntryTx(ctx, tx, rec.OrganizationID, LedgerEventInvoiceIssued, LedgerEntityInvoice, rec.ID, rec.TotalMinor, rec.Currency, map[string]any{
+			"invoice_number": rec.InvoiceNumber,
+		}); err != nil {
+			return InvoiceRecord{}, err
+		}
 		if err := tx.Commit(); err != nil {
 			return InvoiceRecord{}, err
 		}

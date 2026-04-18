@@ -49,6 +49,7 @@ func TestApplyStripeRefund_PartialPaidInvoice(t *testing.T) {
 	ledgerRows := sqlmock.NewRows([]string{"id"}).AddRow(uuid.MustParse("44444444-4444-4444-4444-444444444444"))
 	mock.ExpectQuery(`INSERT INTO stripe_refund_events`).WillReturnRows(ledgerRows)
 
+	mock.ExpectExec(`INSERT INTO ledger_entries`).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec(`UPDATE payments`).WithArgs(int64(2000), payID).WillReturnResult(sqlmock.NewResult(0, 1))
 
 	ctx := context.Background()
@@ -165,6 +166,7 @@ func TestApplyStripeRefund_FullRefundReopensPaidInvoice(t *testing.T) {
 	ledgerRows := sqlmock.NewRows([]string{"id"}).AddRow(uuid.MustParse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
 	mock.ExpectQuery(`INSERT INTO stripe_refund_events`).WillReturnRows(ledgerRows)
 
+	mock.ExpectExec(`INSERT INTO ledger_entries`).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec(`UPDATE payments`).WithArgs(int64(5000), payID).WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`UPDATE invoices`).WithArgs(invID, orgID).WillReturnResult(sqlmock.NewResult(0, 1))
 
