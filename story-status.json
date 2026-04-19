@@ -121,165 +121,165 @@
     },
     {
       "story_id": "C-03",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/c-03-time-entry-crud",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/18",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "C-04",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/c-04-time-entry-workflow",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/20",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "C-05",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/c-05-time-entry-pagination-bulk",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/21",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "D-01",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/d-01-invoice-schema",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/22",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "D-02",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/d-02-generate-invoice",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/23",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "D-03",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/d-03-invoice-line-items",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/24",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "D-04",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/d-04-money-rules",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/25",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "D-05",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/d-05-send-invoice",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/26",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "D-06",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/d-06-invoice-pdf",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/27",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "E-01",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/e-01-stripe-payment-link",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/28",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "E-02",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/e-02-stripe-webhook-receiver",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/29",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "E-03",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/e-03-stripe-webhook-worker",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/31",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "E-04",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/e-04-stripe-reconcile",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/32",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "E-05",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/e-05-stripe-refunds",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/33",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "F-01",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/f-01-ledger",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/34",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "F-02",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/f-02-audit-logs",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/35",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "F-03",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/f-03-reporting",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/36",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "F-04",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/f-04-csv-exports",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/37",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "G-01",
@@ -292,48 +292,48 @@
     },
     {
       "story_id": "G-02",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/g02-g06-observability-docker-ci",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/38",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green (batched G-02–G-06 in PR #38)."
     },
     {
       "story_id": "G-03",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/g02-g06-observability-docker-ci",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/38",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green (batched G-02–G-06 in PR #38)."
     },
     {
       "story_id": "G-04",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/g02-g06-observability-docker-ci",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/38",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green (batched G-02–G-06 in PR #38)."
     },
     {
       "story_id": "G-05",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/g02-g06-observability-docker-ci",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/38",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green (batched G-02–G-06 in PR #38)."
     },
     {
       "story_id": "G-06",
-      "status": "pending",
-      "owner": null,
-      "branch": null,
-      "pr_url": null,
-      "last_updated": null,
-      "notes": ""
+      "status": "done",
+      "owner": "codex-agent",
+      "branch": "feat/g02-g06-observability-docker-ci",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/38",
+      "last_updated": "2026-04-19T12:30:00Z",
+      "notes": "Merged with all required checks green (batched G-02–G-06 in PR #38)."
     },
     {
       "story_id": "H-01",
@@ -382,39 +382,39 @@
     },
     {
       "story_id": "H-06",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/h06-i03-retention-seed-openapi",
       "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/40",
-      "last_updated": "2026-04-19T01:05:00Z",
-      "notes": "PR opened; merge when CI is green."
+      "last_updated": "2026-04-19T12:00:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "I-01",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/h06-i03-retention-seed-openapi",
       "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/40",
-      "last_updated": "2026-04-19T01:05:00Z",
-      "notes": "PR opened; merge when CI is green."
+      "last_updated": "2026-04-19T12:00:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "I-02",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/h06-i03-retention-seed-openapi",
       "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/40",
-      "last_updated": "2026-04-19T01:05:00Z",
-      "notes": "PR opened; merge when CI is green."
+      "last_updated": "2026-04-19T12:00:00Z",
+      "notes": "Merged with all required checks green."
     },
     {
       "story_id": "I-03",
-      "status": "in_review",
+      "status": "done",
       "owner": "codex-agent",
       "branch": "feat/h06-i03-retention-seed-openapi",
       "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/40",
-      "last_updated": "2026-04-19T01:05:00Z",
-      "notes": "PR opened; merge when CI is green."
+      "last_updated": "2026-04-19T12:00:00Z",
+      "notes": "Merged with all required checks green."
     }
   ]
 }
