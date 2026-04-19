@@ -88,7 +88,27 @@ This document summarizes primary abuse scenarios for the Consulting Revenue Plat
 
 **Residual risk:** Application-level algorithmic complexity (for example, pathological reports). Mitigation: pagination, timeouts (`timeoutMiddleware`), and rate limits.
 
-### 8. Information disclosure via logs
+### 8. Long-lived operational data (audit and webhooks)
+
+**Scenario:** Large `audit_logs` and `webhook_events` tables retain sensitive operational payloads indefinitely.
+
+**Controls:** Configurable retention windows (`RETENTION_AUDIT_LOG_DAYS`, `RETENTION_WEBHOOK_EVENT_DAYS`) with scheduled purges via `cmd/retention` or the optional in-process retention worker. Business and accounting tables are out of scope for automatic deletion.
+
+**Tests:** `internal/repo/retention_test.go`, `internal/retention/run_test.go`.
+
+**Residual risk:** Over-aggressive retention windows in misconfiguration. Mitigation: conservative defaults and clamps in `internal/config`.
+
+### 9. Organization lifecycle abuse
+
+**Scenario:** A non-owner attempts to deactivate a tenant, or a caller tries to deactivate a different organization than the active `X-Organization-ID`.
+
+**Controls:** `POST /v1/organizations/{organization_id}/deactivate` requires owner role and matching path/header organization UUID. Deactivation sets `organizations.deactivated_at` and suspends memberships without deleting invoices, ledger rows, or payments.
+
+**Tests:** `internal/httpapi/organization_authz_test.go`, `internal/repo/organization_test.go`.
+
+**Residual risk:** Owner-initiated denial of service for their own org. Mitigation: future reactivation and support workflows.
+
+### 10. Information disclosure via logs
 
 **Scenario:** Passwords, tokens, or webhook secrets appear in access logs or panic traces.
 
@@ -102,4 +122,4 @@ This document summarizes primary abuse scenarios for the Consulting Revenue Plat
 
 - Revisit this document when adding payment flows, new roles, public endpoints, or cross-organization features.
 - Run `go test ./...`, `go test -race ./...`, and CI security jobs before release.
-- Track remaining compliance-oriented work (for example, retention jobs and OpenAPI publication) in `backlog.v1.json` under CAT-H and CAT-I.
+- Track remaining compliance-oriented work in `backlog.v1.json` as new stories are added.

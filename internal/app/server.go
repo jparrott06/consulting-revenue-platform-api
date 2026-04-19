@@ -11,6 +11,7 @@ import (
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/db"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/httpapi"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/retention"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/webhookworker"
 )
 
@@ -38,6 +39,14 @@ func Run(ctx context.Context, cfg config.Config) error {
 		go func() {
 			if err := webhookworker.Run(ctx, cfg, pool); err != nil && !errors.Is(err, context.Canceled) {
 				log.Printf("webhook worker exited: %v", err)
+			}
+		}()
+	}
+
+	if pool != nil && cfg.RetentionWorkerEnabled {
+		go func() {
+			if err := retention.Run(ctx, cfg, pool); err != nil && !errors.Is(err, context.Canceled) {
+				log.Printf("retention worker exited: %v", err)
 			}
 		}()
 	}

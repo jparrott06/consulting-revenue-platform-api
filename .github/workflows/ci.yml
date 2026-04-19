@@ -22,11 +22,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install jsonschema
-        run: pip install jsonschema
+      - name: Install Python validators
+        run: pip install jsonschema openapi-spec-validator pyyaml
 
       - name: Validate backlog.v1.json
         run: python -m jsonschema -i backlog.v1.json backlog.v1.schema.json
+
+      - name: Validate OpenAPI spec
+        run: python -m openapi_spec_validator docs/openapi.yaml
 
   lint:
     name: lint

@@ -133,6 +133,10 @@ func clearOptionalConfig(t *testing.T) {
 		"RATE_LIMIT_DEFAULT_PER_MIN",
 		"RATE_LIMIT_WEBHOOK_PER_MIN",
 		"HTTP_MAX_REQUEST_BODY_BYTES",
+		"RETENTION_AUDIT_LOG_DAYS",
+		"RETENTION_WEBHOOK_EVENT_DAYS",
+		"RETENTION_WORKER_ENABLED",
+		"RETENTION_WORKER_POLL_INTERVAL_SEC",
 	} {
 		if err := os.Unsetenv(key); err != nil {
 			t.Fatalf("unset env %s: %v", key, err)

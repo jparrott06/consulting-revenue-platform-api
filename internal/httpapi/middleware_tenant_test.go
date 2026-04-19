@@ -16,9 +16,12 @@ import (
 
 func testJWTConfig() config.Config {
 	return config.Config{
-		JWTSigningKey:           "0123456789abcdef0123456789abcdef",
-		JWTAccessTTL:            15 * time.Minute,
-		HTTPMaxRequestBodyBytes: 4 << 20,
+		JWTSigningKey:               "0123456789abcdef0123456789abcdef",
+		JWTAccessTTL:                15 * time.Minute,
+		HTTPMaxRequestBodyBytes:     4 << 20,
+		RetentionAuditLogDays:       365,
+		RetentionWebhookEventDays:   90,
+		RetentionWorkerPollInterval: time.Hour,
 	}
 }
 

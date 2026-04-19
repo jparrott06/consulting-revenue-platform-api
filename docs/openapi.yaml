@@ -1,0 +1,618 @@
+openapi: 3.0.3
+info:
+  title: Consulting Revenue Platform API
+  version: "1.0"
+  description: |
+    Multi-tenant API for time tracking, invoicing, Stripe payments, ledger, and reporting.
+    Authenticated routes require `Authorization: Bearer <access_token>` and `X-Organization-ID: <uuid>`.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Health
+  - name: Auth
+  - name: Context
+  - name: Admin
+  - name: Organizations
+  - name: Memberships
+  - name: Clients
+  - name: Projects
+  - name: TimeEntries
+  - name: Invoices
+  - name: Ledger
+  - name: Audit
+  - name: Reports
+  - name: Exports
+  - name: Webhooks
+  - name: Documents
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access JWT from POST /auth/login or /auth/register.
+  schemas:
+    APIError:
+      type: object
+      required: [code, message, request_id]
+      properties:
+        code:
+          type: string
+          example: validation_error
+        message:
+          type: string
+        request_id:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+          description: Store securely; used with POST /auth/refresh
+        expires_in:
+          type: integer
+          format: int64
+        token_type:
+          type: string
+          example: Bearer
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /livez:
+    get:
+      tags: [Health]
+      summary: Process live check
+      responses:
+        "200":
+          description: OK
+  /readyz:
+    get:
+      tags: [Health]
+      summary: Database readiness
+      responses:
+        "200":
+          description: Ready
+        "503":
+          description: Not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register user and default organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, full_name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                full_name:
+                  type: string
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "200":
+          description: New tokens
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke session
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Logged out
+  /v1/me:
+    get:
+      tags: [Context]
+      summary: Current user and organization context
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: header
+          name: X-Organization-ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Context
+        "401":
+          description: Unauthorized
+        "403":
+          description: No membership
+  /v1/admin/ping:
+    get:
+      tags: [Admin]
+      summary: Owner-only admin probe
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: header
+          name: X-Organization-ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+        "403":
+          description: Forbidden
+  /v1/organizations/{organizationID}/deactivate:
+    post:
+      tags: [Organizations]
+      summary: Deactivate organization (owner only); suspends memberships; preserves financial data
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: organizationID
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: X-Organization-ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deactivated (or already deactivated)
+        "403":
+          description: Forbidden or path org mismatch
+        "404":
+          description: Organization not found
+  /v1/memberships:
+    get:
+      tags: [Memberships]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: header
+          name: X-Organization-ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List memberships
+    post:
+      tags: [Memberships]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201":
+          description: Created
+  /v1/memberships/{membershipID}:
+    parameters:
+      - in: path
+        name: membershipID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [Memberships]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Updated
+  /v1/clients:
+    get:
+      tags: [Clients]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Client list
+    post:
+      tags: [Clients]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201":
+          description: Created
+  /v1/clients/{clientID}:
+    parameters:
+      - in: path
+        name: clientID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Clients]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Client
+        "404":
+          description: Not found
+    patch:
+      tags: [Clients]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Updated
+    delete:
+      tags: [Clients]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Soft deleted
+  /v1/projects:
+    get:
+      tags: [Projects]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Project list
+    post:
+      tags: [Projects]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201":
+          description: Created
+  /v1/projects/{projectID}:
+    parameters:
+      - in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [Projects]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Updated
+  /v1/time-entries:
+    get:
+      tags: [TimeEntries]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: List
+    post:
+      tags: [TimeEntries]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201":
+          description: Created
+  /v1/time-entries/{timeEntryID}:
+    parameters:
+      - in: path
+        name: timeEntryID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [TimeEntries]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Updated
+  /v1/time-entries/{timeEntryID}/submit:
+    parameters:
+      - in: path
+        name: timeEntryID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [TimeEntries]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Submitted
+  /v1/time-entries/{timeEntryID}/approve:
+    parameters:
+      - in: path
+        name: timeEntryID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [TimeEntries]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Approved
+  /v1/time-entries/{timeEntryID}/reject:
+    parameters:
+      - in: path
+        name: timeEntryID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [TimeEntries]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Rejected
+  /v1/time-entries/bulk-submit:
+    post:
+      tags: [TimeEntries]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Bulk results
+  /v1/time-entries/bulk-approve:
+    post:
+      tags: [TimeEntries]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Bulk results
+  /v1/invoices/generate:
+    post:
+      tags: [Invoices]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201":
+          description: Invoices generated
+  /v1/invoices/{invoiceID}/send:
+    parameters:
+      - in: path
+        name: invoiceID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Invoices]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Sent
+  /v1/invoices/{invoiceID}/line-items:
+    parameters:
+      - in: path
+        name: invoiceID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [Invoices]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Line items updated
+  /v1/invoices/{invoiceID}/pdf:
+    parameters:
+      - in: path
+        name: invoiceID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Invoices]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: PDF bytes
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+  /v1/invoices/{invoiceID}/pdf-url:
+    parameters:
+      - in: path
+        name: invoiceID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Invoices]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Signed URL payload
+  /v1/invoices/{invoiceID}/payment-link:
+    parameters:
+      - in: path
+        name: invoiceID
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Invoices]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Payment link
+  /v1/ledger:
+    get:
+      tags: [Ledger]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Ledger events
+  /v1/audit-logs:
+    get:
+      tags: [Audit]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Audit entries
+  /v1/reports/outstanding:
+    get:
+      tags: [Reports]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Report payload
+  /v1/reports/paid-this-month:
+    get:
+      tags: [Reports]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Report payload
+  /v1/reports/aging:
+    get:
+      tags: [Reports]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Report payload
+  /v1/exports/invoices.csv:
+    get:
+      tags: [Exports]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: CSV export
+          content:
+            text/csv:
+              schema:
+                type: string
+  /v1/exports/payments.csv:
+    get:
+      tags: [Exports]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: CSV export
+  /v1/exports/time-summary.csv:
+    get:
+      tags: [Exports]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: CSV export
+  /v1/documents/invoice-pdf:
+    get:
+      tags: [Documents]
+      summary: Public PDF download by signed token (no bearer auth)
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: PDF
+        "401":
+          description: Invalid or expired token
+  /webhooks/stripe:
+    post:
+      tags: [Webhooks]
+      summary: Stripe webhook receiver
+      description: |
+        Verifies `Stripe-Signature` using the configured webhook secret.
+        Idempotent on Stripe `event.id`.
+      parameters:
+        - in: header
+          name: Stripe-Signature
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Raw Stripe event JSON
+      responses:
+        "200":
+          description: Event accepted
+        "400":
+          description: Invalid signature or body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
