@@ -47,6 +47,7 @@ func NewHandler(cfg config.Config, db *sql.DB) http.Handler {
 		corsMiddleware(cfg),
 		rateLimitMiddleware(cfg),
 		timeoutMiddleware,
+		maxBodyMiddleware(cfg),
 		observabilityMiddleware,
 	)
 	return otelhttp.NewHandler(h, "api")

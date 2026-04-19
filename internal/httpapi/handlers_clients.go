@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -14,8 +13,6 @@ import (
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
 )
-
-const maxClientBodyBytes = 1 << 20
 
 func mountClientRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
 	mux.Handle("GET /v1/clients", requireTenantAuth(cfg, db, requireRole(authz.ActionClientRead, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -109,10 +106,8 @@ func handleCreateClient(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxClientBodyBytes)
 	var req createClientRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return
 	}
 
@@ -192,10 +187,8 @@ func handlePatchClient(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxClientBodyBytes)
 	var req patchClientRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return
 	}
 	if req.Name == nil && req.BillingEmail == nil && req.CurrencyPreference == nil {

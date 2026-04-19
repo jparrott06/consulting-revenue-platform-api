@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -12,9 +11,8 @@ import (
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/authz"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/validate"
 )
-
-const maxMembershipBodyBytes = 1 << 20
 
 func mountMembershipRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
 	mux.Handle("GET /v1/memberships", requireTenantAuth(cfg, db, requireRole(authz.ActionMembershipRead, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -90,13 +88,11 @@ func handleCreateMembership(w http.ResponseWriter, r *http.Request, db *sql.DB) 
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxMembershipBodyBytes)
 	var req createMembershipRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return
 	}
-	req.Email = strings.TrimSpace(req.Email)
+	req.Email = validate.NormalizeEmail(req.Email)
 	if req.Email == "" || strings.TrimSpace(req.Role) == "" {
 		writeError(ctx, w, http.StatusBadRequest, "validation_error", "email and role are required", nil)
 		return
@@ -175,10 +171,8 @@ func handlePatchMembership(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxMembershipBodyBytes)
 	var req patchMembershipRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return
 	}
 	if strings.TrimSpace(req.Role) == "" {

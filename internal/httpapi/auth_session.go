@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -13,8 +12,6 @@ import (
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
 )
-
-const maxAuthBodyBytes = 1 << 20
 
 type loginRequest struct {
 	Email    string `json:"email"`
@@ -44,10 +41,8 @@ func authHandlers(cfg config.Config, db *sql.DB) (login, refresh, logout http.Ha
 			return
 		}
 
-		r.Body = http.MaxBytesReader(w, r.Body, maxAuthBodyBytes)
 		var req loginRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+		if !decodeJSONBody(ctx, w, r, &req) {
 			return
 		}
 		if strings.TrimSpace(req.Email) == "" || req.Password == "" {
@@ -129,10 +124,8 @@ func authHandlers(cfg config.Config, db *sql.DB) (login, refresh, logout http.Ha
 			return
 		}
 
-		r.Body = http.MaxBytesReader(w, r.Body, maxAuthBodyBytes)
 		var req refreshRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+		if !decodeJSONBody(ctx, w, r, &req) {
 			return
 		}
 		if strings.TrimSpace(req.RefreshToken) == "" {

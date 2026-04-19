@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"net/http"
 	"time"
+
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/logredact"
 )
 
 type ctxKey string
@@ -39,10 +41,11 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
+				logPath, _ := logredact.SanitizeURL(r.URL)
 				accessLogger.Error("panic recovered",
 					"request_id", requestIDFromContext(r.Context()),
 					"method", r.Method,
-					"path", r.URL.Path,
+					"path", logPath,
 				)
 				writeError(r.Context(), w, http.StatusInternalServerError, "internal_error", "internal server error", nil)
 			}

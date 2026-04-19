@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -135,10 +134,8 @@ func handleRejectTimeEntry(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxTimeEntryBodyBytes)
 	var req rejectTimeEntryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return
 	}
 

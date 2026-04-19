@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/logredact"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -47,14 +48,19 @@ func observabilityMiddleware(next http.Handler) http.Handler {
 		httpRequestsTotal.WithLabelValues(r.Method, codeStr, route).Inc()
 		httpRequestDuration.WithLabelValues(r.Method, route).Observe(time.Since(started).Seconds())
 
-		accessLogger.Info("http_request",
+		logPath, logQuery := logredact.SanitizeURL(r.URL)
+		args := []any{
 			"request_id", requestIDFromContext(r.Context()),
 			"method", r.Method,
-			"path", r.URL.Path,
+			"path", logPath,
 			"route", route,
 			"status", rec.statusCode,
 			"duration_ms", time.Since(started).Milliseconds(),
 			"bytes", rec.bytesWritten,
-		)
+		}
+		if logQuery != "" {
+			args = append(args, "query", logQuery)
+		}
+		accessLogger.Info("http_request", args...)
 	})
 }

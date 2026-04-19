@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -15,8 +14,6 @@ import (
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
 )
-
-const maxTimeEntryBodyBytes = 1 << 20
 
 func mountTimeEntryRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
 	mux.Handle("GET /v1/time-entries", requireTenantAuth(cfg, db, requireRole(authz.ActionTimeEntryRead, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -200,10 +197,8 @@ func handleCreateTimeEntry(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxTimeEntryBodyBytes)
 	var req createTimeEntryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return
 	}
 
@@ -301,10 +296,8 @@ func handlePatchTimeEntry(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		}
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxTimeEntryBodyBytes)
 	var req patchTimeEntryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return
 	}
 	if req.ProjectID == nil && req.WorkDate == nil && req.Minutes == nil && req.HourlyRateMinor == nil && req.Notes == nil {

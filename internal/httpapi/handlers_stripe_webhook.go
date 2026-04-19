@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"database/sql"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -33,6 +34,13 @@ func handleStripeWebhook(cfg config.Config, db *sql.DB) http.HandlerFunc {
 		r.Body = http.MaxBytesReader(w, r.Body, maxStripeWebhookBodyBytes)
 		payload, err := io.ReadAll(r.Body)
 		if err != nil {
+			var mbe *http.MaxBytesError
+			if errors.As(err, &mbe) {
+				writeError(ctx, w, http.StatusRequestEntityTooLarge, "payload_too_large", "request body exceeds maximum allowed size", map[string]any{
+					"max_bytes": mbe.Limit,
+				})
+				return
+			}
 			writeError(ctx, w, http.StatusBadRequest, "validation_error", "could not read request body", nil)
 			return
 		}

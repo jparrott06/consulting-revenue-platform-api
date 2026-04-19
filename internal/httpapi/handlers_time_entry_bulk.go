@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -37,10 +36,8 @@ func mountTimeEntryBulkRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB)
 
 func parseBulkActionRequest(r *http.Request, w http.ResponseWriter) ([]uuid.UUID, bool) {
 	ctx := r.Context()
-	r.Body = http.MaxBytesReader(w, r.Body, maxTimeEntryBodyBytes)
 	var req bulkActionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+	if !decodeJSONBody(ctx, w, r, &req) {
 		return nil, false
 	}
 	if len(req.TimeEntryIDs) == 0 {

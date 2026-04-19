@@ -2,16 +2,14 @@ package httpapi
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/auth"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/validate"
 )
-
-const maxRegisterBodyBytes = 1 << 20
 
 type registerRequest struct {
 	Email    string `json:"email"`
@@ -32,13 +30,12 @@ func registerHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		r.Body = http.MaxBytesReader(w, r.Body, maxRegisterBodyBytes)
-
 		var req registerRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(ctx, w, http.StatusBadRequest, "validation_error", "invalid JSON body", nil)
+		if !decodeJSONBody(ctx, w, r, &req) {
 			return
 		}
+		req.Email = validate.NormalizeEmail(req.Email)
+		req.FullName = validate.TrimString(req.FullName)
 
 		if req.Email == "" || req.FullName == "" {
 			writeError(ctx, w, http.StatusBadRequest, "validation_error", "email and full_name are required", map[string]any{
