@@ -24,6 +24,37 @@ The goal is to provide enough low-level implementation detail that LLM coding ag
 - `.github/pull_request_template.md` - Required PR sections for traceable autonomous changes.
 - `branch-protection-checklist.md` - Step-by-step GitHub settings checklist for protected autonomous delivery.
 - `scripts/agent-bootstrap.sh` - Preflight script for agents (validation + optional local setup).
+- `docs/openapi.yaml` - OpenAPI 3 contract for implemented HTTP routes (linted in CI).
+- `docs/runbook.md` - Migrations, seed, retention, health checks, and incident basics.
+
+## Implementation (Go API)
+
+The Go service lives under `cmd/api` with domain logic in `internal/`. A new contributor can run the server and tests locally with:
+
+```bash
+export APP_ENV=local
+export DATABASE_URL='postgres://user:pass@localhost:5432/dbname?sslmode=disable'
+export JWT_SIGNING_KEY='dev-only-32-byte-minimum-key-please!!'
+make migrate-up
+make test
+make run
+```
+
+**Architecture (short):**
+
+- `internal/httpapi` — routing, middleware (auth, rate limits, body size, observability), handlers.
+- `internal/repo` — SQL and transactions; all tenant reads/writes are scoped by `organization_id`.
+- `internal/auth` / `internal/authz` — passwords, JWT access tokens, RBAC action matrix.
+- `internal/config` — typed environment loading.
+- `migrations/` — SQL migrations applied via `cmd/migrate`.
+
+**Documentation:**
+
+- API contract: [docs/openapi.yaml](docs/openapi.yaml)
+- Operations: [docs/runbook.md](docs/runbook.md)
+- Threats and controls: [docs/threat-model.md](docs/threat-model.md)
+
+**OpenAPI validation:** `make openapi-validate` (requires Python with `openapi-spec-validator` and `pyyaml`).
 
 ## Intended V1 Product Scope
 
@@ -120,9 +151,4 @@ This setup keeps autonomous delivery safe: agents can merge only when required C
 
 ## Next Steps
 
-When you are ready to start implementation, create the initial scaffolding from:
-
-- `A-01` through `A-05`
-- `B-01` through `B-05`
-
-These establish the foundation required for safe and correct development of all downstream features.
+Continue executing remaining stories from `backlog.v1.json` and keep `story-status.json` in sync. Prefer one story per PR as described in `AGENTS.md`.

@@ -2,20 +2,21 @@ package authz
 
 // Well-known actions for V1 RBAC checks.
 const (
-	ActionContextRead     = "context.read"
-	ActionAdminOps        = "admin.ops"
-	ActionMembershipRead  = "membership.read"
-	ActionMembershipWrite = "membership.write"
-	ActionClientRead      = "client.read"
-	ActionClientWrite     = "client.write"
-	ActionProjectRead     = "project.read"
-	ActionProjectWrite    = "project.write"
-	ActionTimeEntryRead   = "time_entry.read"
-	ActionTimeEntryWrite  = "time_entry.write"
-	ActionInvoiceWrite    = "invoice.write"
-	ActionLedgerRead      = "ledger.read"
-	ActionAuditRead       = "audit.read"
-	ActionReportRead      = "report.read"
+	ActionContextRead            = "context.read"
+	ActionAdminOps               = "admin.ops"
+	ActionMembershipRead         = "membership.read"
+	ActionMembershipWrite        = "membership.write"
+	ActionClientRead             = "client.read"
+	ActionClientWrite            = "client.write"
+	ActionProjectRead            = "project.read"
+	ActionProjectWrite           = "project.write"
+	ActionTimeEntryRead          = "time_entry.read"
+	ActionTimeEntryWrite         = "time_entry.write"
+	ActionInvoiceWrite           = "invoice.write"
+	ActionLedgerRead             = "ledger.read"
+	ActionAuditRead              = "audit.read"
+	ActionReportRead             = "report.read"
+	ActionOrganizationDeactivate = "organization.deactivate"
 )
 
 // RoleAllows returns whether a membership role may perform an action.
@@ -49,6 +50,8 @@ func RoleAllows(role, action string) bool {
 		return role == "owner" || role == "accountant"
 	case ActionReportRead:
 		return role == "owner" || role == "accountant"
+	case ActionOrganizationDeactivate:
+		return role == "owner"
 	default:
 		return false
 	}

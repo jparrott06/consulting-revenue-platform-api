@@ -36,25 +36,29 @@ type HTTPConfig struct {
 
 // Config is the root app configuration.
 type Config struct {
-	Environment               string
-	DatabaseURL               string
-	CORSAllowedOrigins        []string
-	RateLimitAuthPerMinute    int
-	RateLimitDefaultPerMinute int
-	RateLimitWebhookPerMinute int
-	JWTSigningKey             string
-	JWTAccessTTL              time.Duration
-	JWTRefreshTTL             time.Duration
-	StripeWebhookSecret       string
-	StripeSecretKey           string
-	InvoicePDFURLTTL          time.Duration
-	PublicAPIBaseURL          string
-	InvoicePDFTokenSecret     string
-	WebhookWorkerEnabled      bool
-	WebhookWorkerPollInterval time.Duration
-	WebhookWorkerMaxAttempts  int
-	HTTPMaxRequestBodyBytes   int64
-	HTTP                      HTTPConfig
+	Environment                 string
+	DatabaseURL                 string
+	CORSAllowedOrigins          []string
+	RateLimitAuthPerMinute      int
+	RateLimitDefaultPerMinute   int
+	RateLimitWebhookPerMinute   int
+	JWTSigningKey               string
+	JWTAccessTTL                time.Duration
+	JWTRefreshTTL               time.Duration
+	StripeWebhookSecret         string
+	StripeSecretKey             string
+	InvoicePDFURLTTL            time.Duration
+	PublicAPIBaseURL            string
+	InvoicePDFTokenSecret       string
+	WebhookWorkerEnabled        bool
+	WebhookWorkerPollInterval   time.Duration
+	WebhookWorkerMaxAttempts    int
+	HTTPMaxRequestBodyBytes     int64
+	RetentionAuditLogDays       int
+	RetentionWebhookEventDays   int
+	RetentionWorkerEnabled      bool
+	RetentionWorkerPollInterval time.Duration
+	HTTP                        HTTPConfig
 }
 
 // Load returns configuration from env vars with safe defaults for local dev.
@@ -135,6 +139,39 @@ func Load() (Config, error) {
 
 	corsOrigins := parseOriginList(strings.TrimSpace(stringFromEnv("CORS_ALLOWED_ORIGINS", "")))
 
+	retentionAuditDays, err := intFromEnv("RETENTION_AUDIT_LOG_DAYS", 365)
+	if err != nil {
+		return Config{}, err
+	}
+	if retentionAuditDays < 30 {
+		retentionAuditDays = 30
+	}
+	if retentionAuditDays > 3650 {
+		retentionAuditDays = 3650
+	}
+
+	retentionWebhookDays, err := intFromEnv("RETENTION_WEBHOOK_EVENT_DAYS", 90)
+	if err != nil {
+		return Config{}, err
+	}
+	if retentionWebhookDays < 7 {
+		retentionWebhookDays = 7
+	}
+	if retentionWebhookDays > 730 {
+		retentionWebhookDays = 730
+	}
+
+	retentionPollSec, err := intFromEnv("RETENTION_WORKER_POLL_INTERVAL_SEC", 3600)
+	if err != nil {
+		return Config{}, err
+	}
+	if retentionPollSec < 60 {
+		retentionPollSec = 60
+	}
+	if retentionPollSec > 86400 {
+		retentionPollSec = 86400
+	}
+
 	maxBodyBytes := int64(defaultMaxRequestBody)
 	if raw := strings.TrimSpace(os.Getenv("HTTP_MAX_REQUEST_BODY_BYTES")); raw != "" {
 		v, err := strconv.ParseInt(raw, 10, 64)
@@ -149,24 +186,28 @@ func Load() (Config, error) {
 	}
 
 	cfg := Config{
-		Environment:               environment,
-		DatabaseURL:               stringFromEnv("DATABASE_URL", ""),
-		CORSAllowedOrigins:        corsOrigins,
-		RateLimitAuthPerMinute:    rateAuth,
-		RateLimitDefaultPerMinute: rateDef,
-		RateLimitWebhookPerMinute: rateWH,
-		JWTSigningKey:             stringFromEnv("JWT_SIGNING_KEY", ""),
-		JWTAccessTTL:              time.Duration(accessMin) * time.Minute,
-		JWTRefreshTTL:             time.Duration(refreshDays) * 24 * time.Hour,
-		StripeWebhookSecret:       stringFromEnv("STRIPE_WEBHOOK_SECRET", ""),
-		StripeSecretKey:           stringFromEnv("STRIPE_SECRET_KEY", ""),
-		InvoicePDFURLTTL:          time.Duration(pdfURLTTLSec) * time.Second,
-		PublicAPIBaseURL:          strings.TrimRight(strings.TrimSpace(stringFromEnv("PUBLIC_API_BASE_URL", "")), "/"),
-		InvoicePDFTokenSecret:     stringFromEnv("INVOICE_PDF_TOKEN_SECRET", ""),
-		WebhookWorkerEnabled:      boolFromEnv("WEBHOOK_WORKER_ENABLED", false),
-		WebhookWorkerPollInterval: time.Duration(webhookPollSec) * time.Second,
-		WebhookWorkerMaxAttempts:  webhookMaxAttempts,
-		HTTPMaxRequestBodyBytes:   maxBodyBytes,
+		Environment:                 environment,
+		DatabaseURL:                 stringFromEnv("DATABASE_URL", ""),
+		CORSAllowedOrigins:          corsOrigins,
+		RateLimitAuthPerMinute:      rateAuth,
+		RateLimitDefaultPerMinute:   rateDef,
+		RateLimitWebhookPerMinute:   rateWH,
+		JWTSigningKey:               stringFromEnv("JWT_SIGNING_KEY", ""),
+		JWTAccessTTL:                time.Duration(accessMin) * time.Minute,
+		JWTRefreshTTL:               time.Duration(refreshDays) * 24 * time.Hour,
+		StripeWebhookSecret:         stringFromEnv("STRIPE_WEBHOOK_SECRET", ""),
+		StripeSecretKey:             stringFromEnv("STRIPE_SECRET_KEY", ""),
+		InvoicePDFURLTTL:            time.Duration(pdfURLTTLSec) * time.Second,
+		PublicAPIBaseURL:            strings.TrimRight(strings.TrimSpace(stringFromEnv("PUBLIC_API_BASE_URL", "")), "/"),
+		InvoicePDFTokenSecret:       stringFromEnv("INVOICE_PDF_TOKEN_SECRET", ""),
+		WebhookWorkerEnabled:        boolFromEnv("WEBHOOK_WORKER_ENABLED", false),
+		WebhookWorkerPollInterval:   time.Duration(webhookPollSec) * time.Second,
+		WebhookWorkerMaxAttempts:    webhookMaxAttempts,
+		HTTPMaxRequestBodyBytes:     maxBodyBytes,
+		RetentionAuditLogDays:       retentionAuditDays,
+		RetentionWebhookEventDays:   retentionWebhookDays,
+		RetentionWorkerEnabled:      boolFromEnv("RETENTION_WORKER_ENABLED", false),
+		RetentionWorkerPollInterval: time.Duration(retentionPollSec) * time.Second,
 		HTTP: HTTPConfig{
 			Addr:            stringFromEnv("HTTP_ADDR", defaultHTTPAddr),
 			ReadTimeout:     time.Duration(readTimeoutSec) * time.Second,
