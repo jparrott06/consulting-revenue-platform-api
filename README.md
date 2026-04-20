@@ -53,6 +53,7 @@ make run
 - API contract: [docs/openapi.yaml](docs/openapi.yaml)
 - Operations: [docs/runbook.md](docs/runbook.md)
 - Threats and controls: [docs/threat-model.md](docs/threat-model.md)
+- Architecture boundaries: [docs/architecture-boundaries.md](docs/architecture-boundaries.md)
 
 **OpenAPI validation:** `make openapi-validate` (requires Python with `openapi-spec-validator` and `pyyaml`).
 

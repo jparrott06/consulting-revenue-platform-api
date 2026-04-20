@@ -14,6 +14,11 @@ import (
 // ErrNoEligibleTimeEntries is returned when no approved uninvoiced entries exist for range.
 var ErrNoEligibleTimeEntries = errors.New("no eligible time entries")
 
+var (
+	ErrLineAmountOverflow   = errors.New("line amount overflow")
+	ErrInvoiceTotalOverflow = errors.New("invoice total overflow")
+)
+
 // GenerateInvoiceParams controls approved entry selection.
 type GenerateInvoiceParams struct {
 	FromDate time.Time
@@ -111,11 +116,11 @@ FOR UPDATE`, organizationID, params.FromDate, params.ToDate)
 	for _, it := range selected {
 		m := int64(it.Minutes)
 		if m > 0 && it.Rate > math.MaxInt64/m {
-			return InvoiceRecord{}, errors.New("line amount overflow")
+			return InvoiceRecord{}, ErrLineAmountOverflow
 		}
 		lineTotal := (m*it.Rate + 30) / 60
 		if lineTotal > 0 && subtotal > math.MaxInt64-lineTotal {
-			return InvoiceRecord{}, errors.New("invoice total overflow")
+			return InvoiceRecord{}, ErrInvoiceTotalOverflow
 		}
 		subtotal += lineTotal
 		desc := it.WorkDate.Format("2006-01-02") + " approved work"
