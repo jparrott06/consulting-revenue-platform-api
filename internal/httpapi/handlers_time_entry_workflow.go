@@ -2,14 +2,13 @@ package httpapi
 
 import (
 	"database/sql"
-	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/authz"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
-	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/usecase"
 )
 
 func mountTimeEntryWorkflowRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
@@ -51,32 +50,15 @@ func handleSubmitTimeEntry(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if !ok {
 		return
 	}
-
-	rec, err := repo.GetTimeEntry(ctx, db, p.OrganizationID, entryID)
-	if errors.Is(err, repo.ErrTimeEntryNotFound) {
-		writeError(ctx, w, http.StatusNotFound, "not_found", "time entry not found", nil)
-		return
-	}
+	svc := usecase.NewTimeEntryWorkflowService(usecase.RepoTimeEntryWorkflowStore{DB: db})
+	err := svc.Submit(ctx, usecase.TimeEntryActionInput{
+		OrganizationID: p.OrganizationID,
+		EntryID:        entryID,
+		ActorUserID:    p.UserID,
+		ActorRole:      p.Role,
+	})
 	if err != nil {
-		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not load time entry", nil)
-		return
-	}
-	if rec.UserID != p.UserID {
-		writeError(ctx, w, http.StatusForbidden, "forbidden", "contractors may only submit their own entries", nil)
-		return
-	}
-
-	err = repo.SubmitTimeEntry(ctx, db, p.OrganizationID, entryID, p.UserID)
-	if errors.Is(err, repo.ErrInvalidTimeEntryTransition) {
-		writeError(ctx, w, http.StatusConflict, "conflict", "time entry is not in draft state", nil)
-		return
-	}
-	if errors.Is(err, repo.ErrTimeEntryNotFound) {
-		writeError(ctx, w, http.StatusNotFound, "not_found", "time entry not found", nil)
-		return
-	}
-	if err != nil {
-		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not submit time entry", nil)
+		writeUsecaseError(ctx, w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -97,18 +79,15 @@ func handleApproveTimeEntry(w http.ResponseWriter, r *http.Request, db *sql.DB) 
 	if !ok {
 		return
 	}
-
-	err := repo.ApproveTimeEntry(ctx, db, p.OrganizationID, entryID, p.UserID)
-	if errors.Is(err, repo.ErrInvalidTimeEntryTransition) {
-		writeError(ctx, w, http.StatusConflict, "conflict", "time entry is not in submitted state", nil)
-		return
-	}
-	if errors.Is(err, repo.ErrTimeEntryNotFound) {
-		writeError(ctx, w, http.StatusNotFound, "not_found", "time entry not found", nil)
-		return
-	}
+	svc := usecase.NewTimeEntryWorkflowService(usecase.RepoTimeEntryWorkflowStore{DB: db})
+	err := svc.Approve(ctx, usecase.TimeEntryActionInput{
+		OrganizationID: p.OrganizationID,
+		EntryID:        entryID,
+		ActorUserID:    p.UserID,
+		ActorRole:      p.Role,
+	})
 	if err != nil {
-		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not approve time entry", nil)
+		writeUsecaseError(ctx, w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -139,21 +118,18 @@ func handleRejectTimeEntry(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	err := repo.RejectTimeEntry(ctx, db, p.OrganizationID, entryID, p.UserID, req.Reason)
-	if errors.Is(err, repo.ErrRejectReasonRequired) {
-		writeError(ctx, w, http.StatusBadRequest, "validation_error", "reject reason is required", nil)
-		return
-	}
-	if errors.Is(err, repo.ErrInvalidTimeEntryTransition) {
-		writeError(ctx, w, http.StatusConflict, "conflict", "time entry is not in submitted state", nil)
-		return
-	}
-	if errors.Is(err, repo.ErrTimeEntryNotFound) {
-		writeError(ctx, w, http.StatusNotFound, "not_found", "time entry not found", nil)
-		return
-	}
+	svc := usecase.NewTimeEntryWorkflowService(usecase.RepoTimeEntryWorkflowStore{DB: db})
+	err := svc.Reject(ctx, usecase.TimeEntryRejectInput{
+		TimeEntryActionInput: usecase.TimeEntryActionInput{
+			OrganizationID: p.OrganizationID,
+			EntryID:        entryID,
+			ActorUserID:    p.UserID,
+			ActorRole:      p.Role,
+		},
+		Reason: req.Reason,
+	})
 	if err != nil {
-		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not reject time entry", nil)
+		writeUsecaseError(ctx, w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

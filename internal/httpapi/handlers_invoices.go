@@ -1,8 +1,8 @@
 package httpapi
 
 import (
+	"context"
 	"database/sql"
-	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -10,7 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/authz"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/domain"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/usecase"
 )
 
 func mountInvoiceRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
@@ -30,6 +32,26 @@ type generateInvoiceRequest struct {
 	ToDate   string  `json:"to_date"`
 	Currency string  `json:"currency"`
 	DueAt    *string `json:"due_at"`
+}
+
+type invoiceAuditLogger struct {
+	db *sql.DB
+}
+
+func (l invoiceAuditLogger) LogInvoiceSent(ctx context.Context, organizationID, actorUserID uuid.UUID, invoice domain.InvoiceSummary) {
+	invRef := invoice.ID
+	logAudit(ctx, l.db, repo.InsertAuditLogParams{
+		OrganizationID: &organizationID,
+		ActorUserID:    &actorUserID,
+		Action:         "invoice.sent",
+		EntityType:     "invoice",
+		EntityID:       &invRef,
+		Metadata: map[string]any{
+			"invoice_number": invoice.InvoiceNumber,
+			"from_status":    "draft",
+			"to_status":      invoice.Status,
+		},
+	})
 }
 
 func handleGenerateInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
@@ -77,23 +99,19 @@ func handleGenerateInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		due = &dt
 	}
 
-	invoice, err := repo.GenerateInvoiceFromApprovedEntries(ctx, db, p.OrganizationID, repo.GenerateInvoiceParams{
-		FromDate: from,
-		ToDate:   to,
-		Currency: currency,
-		DueAt:    due,
+	svc := usecase.NewInvoiceWorkflowService(
+		usecase.RepoInvoiceStore{DB: db},
+		invoiceAuditLogger{db: db},
+	)
+	invoice, err := svc.Generate(ctx, usecase.InvoiceGenerateInput{
+		OrganizationID: p.OrganizationID,
+		FromDate:       from,
+		ToDate:         to,
+		Currency:       currency,
+		DueAt:          due,
 	})
-	if errors.Is(err, repo.ErrNoEligibleTimeEntries) {
-		writeError(ctx, w, http.StatusConflict, "conflict", "no eligible approved uninvoiced entries in range", nil)
-		return
-	}
 	if err != nil {
-		msg := err.Error()
-		if strings.Contains(msg, "currency") || strings.Contains(msg, "overflow") || errors.Is(err, repo.ErrUnsupportedCurrency) {
-			writeError(ctx, w, http.StatusBadRequest, "validation_error", msg, nil)
-			return
-		}
-		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not generate invoice", nil)
+		writeUsecaseError(ctx, w, err)
 		return
 	}
 
@@ -124,34 +142,19 @@ func handleSendInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	invoice, err := repo.SendInvoice(ctx, db, p.OrganizationID, invoiceID)
-	if errors.Is(err, repo.ErrInvoiceNotFound) {
-		writeError(ctx, w, http.StatusNotFound, "not_found", "invoice not found", nil)
-		return
-	}
-	if errors.Is(err, repo.ErrInvoiceNotSendable) {
-		writeError(ctx, w, http.StatusConflict, "conflict", "invoice cannot be sent in current state", nil)
-		return
-	}
-	if err != nil {
-		writeError(ctx, w, http.StatusInternalServerError, "internal_error", "could not send invoice", nil)
-		return
-	}
-
-	invRef := invoice.ID
-	logAudit(ctx, db, repo.InsertAuditLogParams{
-		OrganizationID: &p.OrganizationID,
-		ActorUserID:    &p.UserID,
-		Action:         "invoice.sent",
-		EntityType:     "invoice",
-		EntityID:       &invRef,
-		Metadata: map[string]any{
-			"invoice_number": invoice.InvoiceNumber,
-			"from_status":    "draft",
-			"to_status":      invoice.Status,
-		},
+	svc := usecase.NewInvoiceWorkflowService(
+		usecase.RepoInvoiceStore{DB: db},
+		invoiceAuditLogger{db: db},
+	)
+	invoice, err := svc.Send(ctx, usecase.InvoiceSendInput{
+		OrganizationID: p.OrganizationID,
+		InvoiceID:      invoiceID,
+		ActorUserID:    p.UserID,
 	})
-
+	if err != nil {
+		writeUsecaseError(ctx, w, err)
+		return
+	}
 	out := map[string]any{
 		"id":             invoice.ID.String(),
 		"invoice_number": invoice.InvoiceNumber,
@@ -161,8 +164,8 @@ func handleSendInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		"total_minor":    invoice.TotalMinor,
 		"currency":       invoice.Currency,
 	}
-	if invoice.IssuedAt.Valid {
-		out["issued_at"] = invoice.IssuedAt.Time.UTC().Format(time.RFC3339Nano)
+	if invoice.IssuedAt != nil {
+		out["issued_at"] = invoice.IssuedAt.UTC().Format(time.RFC3339Nano)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
