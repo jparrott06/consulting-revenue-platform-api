@@ -56,6 +56,8 @@ make run
 
 **OpenAPI validation:** `make openapi-validate` (requires Python with `openapi-spec-validator` and `pyyaml`).
 
+**End-to-end API demo:** With Postgres migrated and the server listening (e.g. `http://localhost:8080`), run `make demo-api` or `./scripts/demo-api.sh` (requires `curl` and `jq`). The script registers an owner and contractor, creates client/project, runs submit → approve → generate → send invoice, and prints JSON along the way. Override the base URL with `BASE_URL=https://... ./scripts/demo-api.sh`.
+
 ## Intended V1 Product Scope
 
 The target backend is a multi-tenant API where each tenant is an `organization`.

@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: run test lint build migrate-up migrate-down seed retention-once openapi-validate
+.PHONY: run test lint build migrate-up migrate-down seed retention-once openapi-validate demo-api
 
 run:
 	go run ./cmd/api
@@ -30,3 +30,6 @@ retention-once:
 openapi-validate:
 	python3 -m pip install -q openapi-spec-validator pyyaml
 	python3 -c "import yaml; from openapi_spec_validator import validate_spec; validate_spec(yaml.safe_load(open('docs/openapi.yaml')))"
+
+demo-api:
+	./scripts/demo-api.sh
