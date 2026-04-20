@@ -1,0 +1,398 @@
+{
+  "project": {
+    "name": "consulting-revenue-platform-api",
+    "version": "2.0",
+    "description": "V2 backlog focused on architecture hardening, transactional integrity, and showcase-ready productization.",
+    "owner_profile_context": {
+      "primary_skills": [
+        "TypeScript",
+        "Node.js",
+        "Python"
+      ],
+      "target_language": "Go",
+      "target_outcome": "Portfolio-quality backend project that demonstrates direct business impact and production readiness."
+    }
+  },
+  "execution": {
+    "recommended_method": "Implement one epic at a time in dependency order, preserving backwards-compatible API behavior while extracting clearer domain boundaries.",
+    "definition_of_done": [
+      "All V2 stories for the active epic are marked done with acceptance criteria satisfied.",
+      "CI checks pass: fmt, unit tests, race tests, lint, migration checks, and build.",
+      "OpenAPI and runbook remain aligned with runtime behavior.",
+      "Critical money and workflow paths have explicit transaction-boundary tests."
+    ],
+    "global_constraints": [
+      "All tenant-scoped business tables include organization_id.",
+      "All tenant-scoped queries enforce organization_id filtering.",
+      "Mutating endpoints require authentication and authorization.",
+      "Money values are stored as integer minor units; no floating-point arithmetic for currency.",
+      "All logs must avoid secrets and unnecessary PII.",
+      "Standard API error envelope is used everywhere.",
+      "Refactors must preserve existing route paths and auth expectations unless story scope explicitly states otherwise."
+    ],
+    "story_template_contract": {
+      "required_fields": [
+        "id",
+        "category",
+        "title",
+        "description",
+        "scope",
+        "out_of_scope",
+        "dependencies",
+        "api_contract",
+        "data_contract",
+        "implementation_notes",
+        "security_privacy",
+        "edge_cases",
+        "acceptance_criteria",
+        "test_plan",
+        "deliverables",
+        "estimate_points",
+        "priority"
+      ],
+      "agent_rules": [
+        "Do not proceed on a story until dependencies are complete.",
+        "Keep pull requests scoped to one story whenever practical.",
+        "For refactors, preserve behavior with targeted regression tests.",
+        "When uncertain, favor secure defaults and explicit validation."
+      ]
+    }
+  },
+  "categories": [
+    {
+      "id": "CAT-J",
+      "name": "Domain and Use-Case Architecture",
+      "description": "Refactor critical business workflows into explicit domain/use-case layers while keeping API contracts stable."
+    }
+  ],
+  "stories": [
+    {
+      "id": "J-01",
+      "category": "CAT-J",
+      "title": "Define domain boundaries and interfaces for time-entry workflow",
+      "description": "Introduce explicit domain model and repository interfaces for time-entry lifecycle operations without changing external API contracts.",
+      "scope": [
+        "Create domain package types for time-entry status and transition invariants.",
+        "Define repository interfaces required by time-entry submit, approve, and reject use cases.",
+        "Add architecture notes describing new package boundaries and dependency direction."
+      ],
+      "out_of_scope": [
+        "Changing existing HTTP request/response payloads.",
+        "Migrating invoicing logic in this story."
+      ],
+      "dependencies": [],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/submit"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/approve"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/reject"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "time_entries",
+          "audit_logs"
+        ]
+      },
+      "implementation_notes": [
+        "Keep domain package free of database and HTTP imports.",
+        "Model transition guards as typed errors instead of string matching."
+      ],
+      "security_privacy": [
+        "Role and tenant checks remain enforced before use-case execution."
+      ],
+      "edge_cases": [
+        "Reject requires reason; preserve existing validation behavior.",
+        "Submitted/approved state conflicts remain deterministic."
+      ],
+      "acceptance_criteria": [
+        "New domain and interface packages compile and are used by time-entry workflow path.",
+        "Behavior for submit/approve/reject endpoints is unchanged for success and error cases.",
+        "Tests verify domain transition matrix independent of HTTP transport."
+      ],
+      "test_plan": [
+        "Add unit tests for domain transition rules.",
+        "Run existing HTTP authz and workflow tests to confirm no regression."
+      ],
+      "deliverables": [
+        "Domain types and repository interfaces for time-entry lifecycle.",
+        "Short architecture doc update for dependency boundaries."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "J-02",
+      "category": "CAT-J",
+      "title": "Extract time-entry workflow into explicit application use-case layer",
+      "description": "Move time-entry submit, approve, and reject orchestration out of handlers into a dedicated use-case service.",
+      "scope": [
+        "Implement application service for submit, approve, and reject flows.",
+        "Refactor handlers to parse/authorize and delegate to use-case layer.",
+        "Preserve audit event semantics for transition actions."
+      ],
+      "out_of_scope": [
+        "Changing endpoint paths, auth headers, or status codes.",
+        "Bulk workflow operation refactor."
+      ],
+      "dependencies": [
+        "J-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/submit"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/approve"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/reject"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "time_entries",
+          "audit_logs"
+        ]
+      },
+      "implementation_notes": [
+        "Use constructor-based dependency injection for use-case service.",
+        "Map typed domain errors to existing HTTP error envelope in one adapter layer."
+      ],
+      "security_privacy": [
+        "Authorization decisions stay in edge layer before use-case invocation."
+      ],
+      "edge_cases": [
+        "Idempotent conflict responses remain consistent for already transitioned entries.",
+        "Contractor self-ownership restriction remains enforced."
+      ],
+      "acceptance_criteria": [
+        "Handlers for submit/approve/reject contain no direct repository transition calls.",
+        "All existing workflow endpoint tests pass unchanged or with only adapter-level updates.",
+        "Audit log actions remain emitted for successful transitions."
+      ],
+      "test_plan": [
+        "Add use-case unit tests with in-memory or mock repositories.",
+        "Run internal/httpapi workflow and authz regression tests."
+      ],
+      "deliverables": [
+        "Application use-case package for time-entry transitions.",
+        "Refactored handlers delegating to use-case service."
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "J-03",
+      "category": "CAT-J",
+      "title": "Refactor invoice generation and send into use-case services with explicit transaction boundaries",
+      "description": "Consolidate invoice generation and send orchestration into use-case services and formalize transaction boundaries for multi-step writes.",
+      "scope": [
+        "Introduce use-case services for invoice generate and send operations.",
+        "Use explicit transaction wrapper for multi-table invoice workflows.",
+        "Keep current response schema and route contract intact."
+      ],
+      "out_of_scope": [
+        "Stripe payment-link and webhook reconciliation refactor.",
+        "Changing invoice numbering strategy."
+      ],
+      "dependencies": [
+        "J-02"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/invoices/generate"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/invoices/{invoiceID}/send"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "invoices",
+          "invoice_line_items",
+          "time_entries",
+          "invoice_sequences",
+          "audit_logs"
+        ]
+      },
+      "implementation_notes": [
+        "Make transaction ownership explicit in use-case layer, not handlers.",
+        "Preserve deterministic invoice totals and status transition semantics."
+      ],
+      "security_privacy": [
+        "Tenant scoping and invoice write-role checks must remain enforced."
+      ],
+      "edge_cases": [
+        "No eligible approved entries returns existing conflict behavior.",
+        "Send on non-draft invoice returns conflict without side effects."
+      ],
+      "acceptance_criteria": [
+        "Invoice generate and send handlers delegate orchestration to use-case layer.",
+        "Transaction tests prove partial failure does not persist inconsistent invoice/time-entry state.",
+        "Existing endpoint response payload fields remain unchanged."
+      ],
+      "test_plan": [
+        "Add integration tests for transaction rollback on injected failures.",
+        "Run current invoice API/authz tests and repo tests."
+      ],
+      "deliverables": [
+        "Use-case service for invoice generation and send.",
+        "Transaction-boundary tests documenting atomic behavior."
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "J-04",
+      "category": "CAT-J",
+      "title": "Standardize typed domain errors and transport mapping across refactored flows",
+      "description": "Replace fragile string-based branching with typed errors and a centralized transport mapping layer for time-entry and invoice workflows.",
+      "scope": [
+        "Define typed domain/application errors for conflict, validation, and not-found cases.",
+        "Add shared mapping helper from domain errors to API error envelope.",
+        "Apply mapping in refactored time-entry and invoice handlers."
+      ],
+      "out_of_scope": [
+        "Global rewrite of every handler in the codebase.",
+        "Changing API error envelope schema."
+      ],
+      "dependencies": [
+        "J-03"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/submit"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/approve"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/reject"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/invoices/generate"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/invoices/{invoiceID}/send"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Use errors.Is-compatible sentinel/typed errors to avoid brittle substring checks.",
+        "Keep error code/message outputs stable for existing API consumers."
+      ],
+      "security_privacy": [
+        "Do not expose internal stack or SQL details in client-facing errors."
+      ],
+      "edge_cases": [
+        "Unknown errors still map to internal_error with request_id context.",
+        "Validation conflicts preserve expected HTTP status classes."
+      ],
+      "acceptance_criteria": [
+        "Refactored handlers no longer branch on string-contains for expected business errors.",
+        "Error mapping tests cover known domain errors to HTTP code/code/message combinations.",
+        "External API error envelope format remains unchanged."
+      ],
+      "test_plan": [
+        "Add table-driven tests for domain-to-transport error mapping.",
+        "Run existing endpoint regression tests for affected routes."
+      ],
+      "deliverables": [
+        "Typed error definitions for refactored flows.",
+        "Shared transport error mapper used by handlers."
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "J-05",
+      "category": "CAT-J",
+      "title": "Document architecture boundaries and contribution rules for domain/use-case/repo layers",
+      "description": "Add concise contributor guidance so future stories follow the new dependency direction and avoid relapsing into mixed-layer logic.",
+      "scope": [
+        "Document layer responsibilities: transport, use-case, domain, repository.",
+        "Add concrete examples of where validation, authz, and transactions should live.",
+        "Reference these rules in README and runbook contribution sections."
+      ],
+      "out_of_scope": [
+        "Automated static architecture linting.",
+        "Organization-wide process docs outside this repository."
+      ],
+      "dependencies": [
+        "J-04"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Keep documentation actionable and under one page where possible.",
+        "Include migration guidance for remaining unrefactored handlers."
+      ],
+      "security_privacy": [
+        "Document secure defaults for boundary placement (authz at transport edge, secrets never logged)."
+      ],
+      "edge_cases": [
+        "Contributors touching legacy paths need guidance to avoid half-refactors."
+      ],
+      "acceptance_criteria": [
+        "Repository docs clearly define dependency direction and examples.",
+        "README includes a quick-start note for adding new use-case services.",
+        "Story J implementation areas are explicitly mapped to new boundaries."
+      ],
+      "test_plan": [
+        "Manual documentation walkthrough validating that a new contributor can place code correctly.",
+        "Link check for any added internal docs references."
+      ],
+      "deliverables": [
+        "Architecture guidance document for V2 layering model.",
+        "README/runbook updates referencing the new boundaries."
+      ],
+      "estimate_points": 2,
+      "priority": "P1"
+    }
+  ],
+  "phases": [
+    {
+      "id": "PHASE-5",
+      "name": "Domain and Use-Case Architecture Refactor",
+      "story_ids": [
+        "J-01",
+        "J-02",
+        "J-03",
+        "J-04",
+        "J-05"
+      ]
+    }
+  ]
+}
