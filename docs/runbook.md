@@ -142,6 +142,8 @@ Before merging changes that touch workflows, metrics, or logging:
 ## API contract
 
 - OpenAPI: [openapi.yaml](openapi.yaml) (validated in CI).
+- Compatibility/deprecation policy for API changes: [api-compatibility.md](api-compatibility.md).
+- For API-touching PRs, include: compatibility class (additive/behavior-changing/breaking), updated OpenAPI, and migration notes when behavior changes.
 
 ## References
 
