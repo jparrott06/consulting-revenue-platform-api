@@ -73,6 +73,16 @@
       "id": "CAT-L",
       "name": "Stripe Integration and Payment Reliability",
       "description": "Harden Stripe webhooks, payment links, and reconciliation with tests and documentation aligned with observability from Epic K."
+    },
+    {
+      "id": "CAT-M",
+      "name": "API Contract Governance",
+      "description": "Prevent OpenAPI/runtime drift with contract-focused tests, release checks, and compatibility policies."
+    },
+    {
+      "id": "CAT-N",
+      "name": "Demo Experience and Showcase UX",
+      "description": "Deliver a polished, reproducible demo flow with optional lightweight frontend and scripted evidence for portfolio presentation."
     }
   ],
   "stories": [
@@ -611,7 +621,9 @@
       "security_privacy": [
         "Examples use synthetic data only."
       ],
-      "edge_cases": [],
+      "edge_cases": [
+        "Runbook steps should include an operator fallback when integration-test database access is unavailable."
+      ],
       "acceptance_criteria": [
         "Runbook is concise and command-oriented; links to metrics and matrix."
       ],
@@ -868,7 +880,9 @@
       "security_privacy": [
         "Document that webhook secrets stay in environment variables."
       ],
-      "edge_cases": [],
+      "edge_cases": [
+        "README quick-start should include a non-Stripe fallback path when webhook forwarding tools are unavailable."
+      ],
       "acceptance_criteria": [
         "OpenAPI validates in CI; README steps are copy-pasteable."
       ],
@@ -881,6 +895,628 @@
       ],
       "estimate_points": 3,
       "priority": "P2"
+    },
+    {
+      "id": "M-01",
+      "category": "CAT-M",
+      "title": "Define API compatibility policy and versioning rules for contract changes",
+      "description": "Establish explicit compatibility guarantees and change-management rules so API evolution is predictable for consumers.",
+      "scope": [
+        "Create a compatibility policy covering additive vs breaking changes for endpoints, fields, and enums.",
+        "Document deprecation strategy, communication expectations, and rollout sequencing.",
+        "Link policy in README and runbook where API changes are described."
+      ],
+      "out_of_scope": [
+        "Introducing API v2 endpoint namespace.",
+        "Building client SDK release automation."
+      ],
+      "dependencies": [
+        "J-05"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Keep policy concise and enforceable in code review.",
+        "Align policy language with existing OpenAPI and CI workflows."
+      ],
+      "security_privacy": [
+        "Compatibility policy must not encourage exposing sensitive fields for backwards compatibility."
+      ],
+      "edge_cases": [
+        "Enum expansion behavior should be documented for clients that assume closed sets.",
+        "Error-envelope changes require explicit compatibility handling."
+      ],
+      "acceptance_criteria": [
+        "Repository docs include explicit API compatibility and deprecation policy.",
+        "Contribution guidance references policy as a required check for API-touching PRs.",
+        "Policy includes clear examples of additive, behavior-changing, and breaking updates."
+      ],
+      "test_plan": [
+        "Manual policy walkthrough with at least three representative API change scenarios.",
+        "Link checks for documentation cross-references."
+      ],
+      "deliverables": [
+        "API compatibility policy document.",
+        "README/runbook references to compatibility rules."
+      ],
+      "estimate_points": 3,
+      "priority": "P1"
+    },
+    {
+      "id": "M-02",
+      "category": "CAT-M",
+      "title": "Add OpenAPI route coverage test to detect undocumented runtime endpoints",
+      "description": "Introduce automated verification that implemented routes are represented in OpenAPI, with explicit allowance list for internal-only endpoints.",
+      "scope": [
+        "Build test tooling that enumerates registered HTTP routes and compares against OpenAPI paths/methods.",
+        "Introduce explicit allowlist for intentionally undocumented routes (e.g., internal metrics).",
+        "Fail CI when public runtime routes are missing from OpenAPI."
+      ],
+      "out_of_scope": [
+        "Generating OpenAPI from source code.",
+        "Runtime auth-behavior verification for each endpoint."
+      ],
+      "dependencies": [
+        "M-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/healthz"
+          },
+          {
+            "method": "POST",
+            "path": "/auth/login"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/invoices/generate"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Normalize path parameter naming differences before comparison.",
+        "Keep allowlist small and explicitly justified in code comments/docs."
+      ],
+      "security_privacy": [
+        "Undocumented internal routes must be explicitly tagged to avoid accidental public exposure."
+      ],
+      "edge_cases": [
+        "Equivalent route patterns with different parameter names should compare as equal.",
+        "Method-specific mismatches must fail even if path exists for another method."
+      ],
+      "acceptance_criteria": [
+        "CI fails when runtime public route is absent from OpenAPI.",
+        "Intentional undocumented routes are tracked in explicit allowlist.",
+        "Contributor docs explain how to update OpenAPI and coverage tests together."
+      ],
+      "test_plan": [
+        "Unit tests for route normalization and diff logic.",
+        "Integration test proving mismatch produces deterministic failure output."
+      ],
+      "deliverables": [
+        "OpenAPI route coverage test and allowlist mechanism.",
+        "Documentation for maintaining route/spec parity."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "M-03",
+      "category": "CAT-M",
+      "title": "Add response-envelope contract tests for critical endpoints",
+      "description": "Verify that critical endpoint responses conform to OpenAPI schemas for both success and representative error cases.",
+      "scope": [
+        "Select high-impact endpoints across auth, time-entry workflow, invoices, and reports.",
+        "Add tests that execute handlers and validate response JSON shape against OpenAPI component/operation schemas.",
+        "Cover both success and at least one validation or conflict error per selected endpoint."
+      ],
+      "out_of_scope": [
+        "Exhaustive schema validation for every endpoint in one story.",
+        "External consumer contract test harnesses."
+      ],
+      "dependencies": [
+        "M-02",
+        "K-02"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/login"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/time-entries"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/approve"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/invoices/generate"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/reports/outstanding"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Prefer deterministic fixture setup to keep contract tests stable.",
+        "Use schema references from docs/openapi.yaml as source of truth."
+      ],
+      "security_privacy": [
+        "Contract fixtures must use synthetic data only.",
+        "Error contract checks must ensure no sensitive internal details leak."
+      ],
+      "edge_cases": [
+        "Optional fields omitted in responses should still pass schema validation.",
+        "Error responses with details object should validate additionalProperties behavior."
+      ],
+      "acceptance_criteria": [
+        "Critical endpoint responses are validated against OpenAPI in automated tests.",
+        "At least one success and one error response are checked per selected route.",
+        "Contract test failures provide actionable mismatch output."
+      ],
+      "test_plan": [
+        "Run contract tests in CI with deterministic fixtures.",
+        "Negative test ensures intentionally malformed response payload fails schema validation."
+      ],
+      "deliverables": [
+        "OpenAPI-backed response contract test suite for critical endpoints.",
+        "Test utility helpers for schema lookup and validation."
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "M-04",
+      "category": "CAT-M",
+      "title": "Enforce OpenAPI change gate in CI with compatibility classification",
+      "description": "Add CI logic that requires explicit compatibility classification when OpenAPI changes are introduced.",
+      "scope": [
+        "Detect OpenAPI diff in pull requests and classify as additive, behavior-changing, or breaking.",
+        "Require PR annotation/check input declaring compatibility class for OpenAPI-touching changes.",
+        "Fail CI for unclassified or policy-violating breaking changes."
+      ],
+      "out_of_scope": [
+        "Automatic semantic-version release publishing.",
+        "External API gateway rollout automation."
+      ],
+      "dependencies": [
+        "M-01",
+        "M-03"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Keep classification mechanism lightweight (labels, PR template field, or checked metadata file).",
+        "Provide clear CI error messages with remediation steps."
+      ],
+      "security_privacy": [
+        "CI metadata should not include secrets or environment-specific URLs."
+      ],
+      "edge_cases": [
+        "Non-functional doc edits in OpenAPI should be classified as non-breaking automatically when possible.",
+        "Simultaneous endpoint add/remove should require explicit breaking-change acknowledgement."
+      ],
+      "acceptance_criteria": [
+        "CI enforces compatibility classification when OpenAPI file changes.",
+        "Breaking changes are blocked unless explicitly permitted by policy.",
+        "PR template or contribution docs include classification instructions."
+      ],
+      "test_plan": [
+        "Workflow test with sample PR metadata simulating additive and breaking diffs.",
+        "Manual dry-run of classification script against representative OpenAPI diffs."
+      ],
+      "deliverables": [
+        "CI workflow step for OpenAPI compatibility gate.",
+        "Contributor guidance for compatibility classification."
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "M-05",
+      "category": "CAT-M",
+      "title": "Publish API governance runbook for contract changes and release readiness",
+      "description": "Document repeatable release-readiness checks and governance workflow for API contract changes.",
+      "scope": [
+        "Add runbook section for contract-change checklist, including OpenAPI update, parity test, compatibility classification, and communication notes.",
+        "Define release-readiness command sequence for local verification.",
+        "Add examples of acceptable additive changes and forbidden unannounced breaking changes."
+      ],
+      "out_of_scope": [
+        "External customer communication tooling.",
+        "Versioned API portal publication automation."
+      ],
+      "dependencies": [
+        "M-04"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Keep checklist concise and copy/paste friendly for pull request authors.",
+        "Reference existing CI gates rather than duplicating policy text."
+      ],
+      "security_privacy": [
+        "Governance docs should avoid leaking internal-only endpoint details outside intended docs."
+      ],
+      "edge_cases": [
+        "Runbook should include fallback steps if contract tests are flaky or unavailable.",
+        "Document handling for emergency fixes requiring temporary policy exceptions."
+      ],
+      "acceptance_criteria": [
+        "Runbook includes end-to-end governance checklist for API contract changes.",
+        "README links to governance workflow for contributors.",
+        "Checklist aligns with CI gates introduced in Epic M."
+      ],
+      "test_plan": [
+        "Manual runbook drill completing checklist for a sample OpenAPI change.",
+        "Link and command sanity validation for documented release-readiness steps."
+      ],
+      "deliverables": [
+        "API governance runbook section.",
+        "Contributor-facing release-readiness checklist for contract updates."
+      ],
+      "estimate_points": 2,
+      "priority": "P1"
+    },
+    {
+      "id": "N-01",
+      "category": "CAT-N",
+      "title": "Define showcase demo narrative and success criteria",
+      "description": "Create a structured demo script that maps business value to concrete API flows and measurable outcomes.",
+      "scope": [
+        "Write a concise narrative for portfolio/demo use covering actor personas, key steps, and expected outputs.",
+        "Define a canonical happy path (contractor submits time, owner approves, invoice generated/sent, reporting output).",
+        "Document objective success criteria for each stage of the demo."
+      ],
+      "out_of_scope": [
+        "Implementing UI components.",
+        "Adding new business-domain endpoints."
+      ],
+      "dependencies": [
+        "M-05"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/login"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/submit"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/time-entries/{timeEntryID}/approve"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/invoices/generate"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/invoices/{invoiceID}/send"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Keep narrative customer-facing but traceable to actual route behavior and outputs.",
+        "Use deterministic data points so demo expectations are testable."
+      ],
+      "security_privacy": [
+        "Demo artifacts must use synthetic identities and data only."
+      ],
+      "edge_cases": [
+        "Demo should include fallback note if Stripe-dependent steps are not configured.",
+        "Narrative should call out expected 4xx failures for role-mismatch scenarios."
+      ],
+      "acceptance_criteria": [
+        "A documented showcase flow exists with step-by-step outcomes.",
+        "Each demo step maps to concrete API endpoints and expected responses.",
+        "Success criteria are objective and verifiable by script output."
+      ],
+      "test_plan": [
+        "Manual walkthrough of narrative against local environment.",
+        "Peer review of narrative clarity and endpoint mapping accuracy."
+      ],
+      "deliverables": [
+        "Demo narrative document with actor-based flow.",
+        "Checklist of expected outputs per demo step."
+      ],
+      "estimate_points": 2,
+      "priority": "P1"
+    },
+    {
+      "id": "N-02",
+      "category": "CAT-N",
+      "title": "Enhance automated demo script with assertions and cleanup mode",
+      "description": "Upgrade demo automation to provide deterministic pass/fail assertions and optional cleanup for repeatable portfolio runs.",
+      "scope": [
+        "Extend demo script to assert critical response fields and status transitions end-to-end.",
+        "Add optional cleanup/reset mode to remove or isolate prior demo artifacts safely.",
+        "Emit human-readable summary and machine-readable result artifact (JSON or text report)."
+      ],
+      "out_of_scope": [
+        "Replacing API integration tests.",
+        "Deleting immutable financial ledger records."
+      ],
+      "dependencies": [
+        "N-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/register"
+          },
+          {
+            "method": "POST",
+            "path": "/auth/login"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/memberships"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/invoices/generate"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/reports/outstanding"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "users",
+          "memberships",
+          "clients",
+          "projects",
+          "time_entries",
+          "invoices",
+          "audit_logs"
+        ]
+      },
+      "implementation_notes": [
+        "Support idempotent reruns via unique test identifiers and optional reset flags.",
+        "Keep script dependency footprint minimal (shell + curl + jq)."
+      ],
+      "security_privacy": [
+        "Script output must avoid exposing tokens or secret values.",
+        "Cleanup mode must constrain deletions to synthetic demo scope."
+      ],
+      "edge_cases": [
+        "Partial run failures should return non-zero exit and actionable diagnostics.",
+        "Environment without jq should produce clear dependency error."
+      ],
+      "acceptance_criteria": [
+        "Demo script exits non-zero on assertion failure and zero on full success.",
+        "Optional cleanup mode allows repeatable local demo runs without manual DB surgery.",
+        "Script output includes compact success summary suitable for portfolio evidence."
+      ],
+      "test_plan": [
+        "Run script in clean DB and rerun with cleanup/reset mode.",
+        "Inject intentional mismatch to verify assertion failure behavior."
+      ],
+      "deliverables": [
+        "Enhanced demo script with assertions and optional cleanup.",
+        "Demo execution report artifact format and sample output."
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "N-03",
+      "category": "CAT-N",
+      "title": "Create a lightweight frontend demo shell for key API workflows",
+      "description": "Add a minimal frontend that demonstrates login, org context, and critical workflow visibility without full product scope expansion.",
+      "scope": [
+        "Bootstrap a lightweight frontend shell with environment-configured API base URL.",
+        "Implement basic screens for auth login, me/context, clients/projects list, and key workflow actions.",
+        "Display structured API responses and surfaced errors for demo transparency."
+      ],
+      "out_of_scope": [
+        "Production-grade design system and comprehensive UX polish.",
+        "Full coverage of every API endpoint."
+      ],
+      "dependencies": [
+        "N-02",
+        "L-04"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/login"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/me"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/clients"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/projects"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/time-entries"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Keep architecture intentionally thin: transport DTOs and API client wrappers only.",
+        "Use explicit token/org context wiring with clear local-dev instructions."
+      ],
+      "security_privacy": [
+        "Document token storage approach and associated security trade-offs.",
+        "Restrict CORS configuration to intended local frontend origin(s)."
+      ],
+      "edge_cases": [
+        "Expired tokens should redirect to login with clear message.",
+        "Missing org header context should produce actionable UI error."
+      ],
+      "acceptance_criteria": [
+        "Frontend can execute core demo flow against local API with minimal setup.",
+        "Users can authenticate and view core tenant-scoped resources.",
+        "UI clearly surfaces API errors without exposing sensitive internals."
+      ],
+      "test_plan": [
+        "Manual browser test for login and core list/view actions.",
+        "Basic frontend build/test command run in CI or documented local checks."
+      ],
+      "deliverables": [
+        "Lightweight frontend demo shell with setup instructions.",
+        "Core workflow screens and API integration layer."
+      ],
+      "estimate_points": 8,
+      "priority": "P1"
+    },
+    {
+      "id": "N-04",
+      "category": "CAT-N",
+      "title": "Add demo-quality data bootstrap presets and scenario toggles",
+      "description": "Provide deterministic seed presets that support multiple showcase scenarios with explicit role and state setup.",
+      "scope": [
+        "Extend seed tooling with named presets (minimal, happy-path, conflict-path).",
+        "Add scenario toggles for role distribution and pre-staged workflow states.",
+        "Document seed preset usage in README/runbook and demo docs."
+      ],
+      "out_of_scope": [
+        "Randomized large-scale synthetic data generation.",
+        "Production data anonymization tooling."
+      ],
+      "dependencies": [
+        "N-02"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "organizations",
+          "users",
+          "memberships",
+          "clients",
+          "projects",
+          "time_entries",
+          "invoices"
+        ]
+      },
+      "implementation_notes": [
+        "Keep default preset backward-compatible with existing demo behavior.",
+        "Ensure preset IDs/emails are deterministic and clearly namespaced."
+      ],
+      "security_privacy": [
+        "Presets must contain synthetic placeholder PII only.",
+        "Seed logs must avoid printing sensitive tokens or secrets."
+      ],
+      "edge_cases": [
+        "Reset mode should fail safely when immutable ledger constraints block cleanup.",
+        "Scenario toggles should validate incompatible combinations with clear errors."
+      ],
+      "acceptance_criteria": [
+        "Seed command supports at least three named showcase presets.",
+        "Each preset produces deterministic expected entities and states.",
+        "Docs explain when to use each preset and expected outcomes."
+      ],
+      "test_plan": [
+        "Integration tests for each preset on clean DB.",
+        "Manual demo verification across happy-path and conflict-path presets."
+      ],
+      "deliverables": [
+        "Seed preset support with documented scenario toggles.",
+        "Preset validation tests and usage documentation."
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "N-05",
+      "category": "CAT-N",
+      "title": "Publish end-to-end showcase guide with recording checklist",
+      "description": "Create a polished showcase guide that combines script, frontend, and operational evidence into a repeatable presentation workflow.",
+      "scope": [
+        "Write a concise showcase guide for live demo and recorded walkthrough modes.",
+        "Include checklist for pre-demo environment checks, command sequence, and fallback paths.",
+        "Add evidence capture checklist (logs, metrics, script output, screenshots) for portfolio artifacts."
+      ],
+      "out_of_scope": [
+        "Video editing automation.",
+        "Public website hosting of demo assets."
+      ],
+      "dependencies": [
+        "N-03",
+        "N-04"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Keep guide short enough for rehearsal but complete enough for first-time execution.",
+        "Include branch/version pinning guidance to avoid drift during recording."
+      ],
+      "security_privacy": [
+        "Checklist must explicitly mask secrets and tokens during recording.",
+        "Portfolio artifacts should avoid real identifiers and credentials."
+      ],
+      "edge_cases": [
+        "Guide should include fallback plan if Stripe-dependent steps are unavailable.",
+        "Local machine resource constraints should have mitigation notes."
+      ],
+      "acceptance_criteria": [
+        "Showcase guide supports a complete end-to-end run by a new reviewer.",
+        "Recording checklist includes security hygiene and artifact capture requirements.",
+        "README links to showcase guide as primary demo entrypoint."
+      ],
+      "test_plan": [
+        "Dry-run walkthrough by someone not authoring the guide.",
+        "Checklist validation ensuring each step maps to existing script/frontend capability."
+      ],
+      "deliverables": [
+        "End-to-end showcase guide for live and recorded demos.",
+        "Recording and evidence capture checklist."
+      ],
+      "estimate_points": 2,
+      "priority": "P1"
     }
   ],
   "phases": [
@@ -915,6 +1551,28 @@
         "L-03",
         "L-04",
         "L-05"
+      ]
+    },
+    {
+      "id": "PHASE-8",
+      "name": "API Contract Governance",
+      "story_ids": [
+        "M-01",
+        "M-02",
+        "M-03",
+        "M-04",
+        "M-05"
+      ]
+    },
+    {
+      "id": "PHASE-9",
+      "name": "Demo Experience and Showcase UX",
+      "story_ids": [
+        "N-01",
+        "N-02",
+        "N-03",
+        "N-04",
+        "N-05"
       ]
     }
   ]
