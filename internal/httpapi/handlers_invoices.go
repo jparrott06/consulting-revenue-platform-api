@@ -15,6 +15,13 @@ import (
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/usecase"
 )
 
+func writeInvoiceUsecaseError(ctx context.Context, w http.ResponseWriter, err error, action string) {
+	if usecase.Kind(err) == usecase.ErrorKindConflict {
+		recordWorkflowConflict("invoice", action)
+	}
+	writeUsecaseError(ctx, w, err)
+}
+
 func mountInvoiceRoutes(mux *http.ServeMux, cfg config.Config, db *sql.DB) {
 	mux.Handle("POST /v1/invoices/generate", requireTenantAuth(cfg, db, requireRole(authz.ActionInvoiceWrite, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handleGenerateInvoice(w, r, db)
@@ -111,7 +118,7 @@ func handleGenerateInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		DueAt:          due,
 	})
 	if err != nil {
-		writeUsecaseError(ctx, w, err)
+		writeInvoiceUsecaseError(ctx, w, err, "generate")
 		return
 	}
 
@@ -152,7 +159,7 @@ func handleSendInvoice(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		ActorUserID:    p.UserID,
 	})
 	if err != nil {
-		writeUsecaseError(ctx, w, err)
+		writeInvoiceUsecaseError(ctx, w, err, "send")
 		return
 	}
 	out := map[string]any{

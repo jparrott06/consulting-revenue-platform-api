@@ -80,12 +80,49 @@ go run ./cmd/api
 - `GET /readyz` — database connectivity.
 - `GET /metrics` — Prometheus metrics (internal scrape; not in public OpenAPI surface).
 
+### Prometheus (RED-style HTTP metrics)
+
+Counters and histograms use **low-cardinality** labels only (`method`, `route`, `status_class` such as `2xx`/`4xx`/`5xx`). Business workflow conflicts are counted separately:
+
+- `http_requests_total{method,route,status_class}` — request rate and error class.
+- `http_request_duration_seconds{method,route}` — latency.
+- `business_workflow_conflict_total{domain,action}` — 409 outcomes on invoice and time-entry workflows.
+
+Example queries:
+
+```promql
+# 5xx rate for a route pattern
+sum(rate(http_requests_total{route="POST /v1/invoices/generate",status_class="5xx"}[5m]))
+
+# p95 latency
+histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{route="POST /v1/invoices/generate"}[5m])) by (le))
+
+# Workflow conflicts
+sum(rate(business_workflow_conflict_total[5m])) by (domain, action)
+```
+
+Structured log fields for HTTP are documented in [logging.md](logging.md). Transaction ownership for critical routes is in [transaction-matrix.md](transaction-matrix.md).
+
 ## Incident basics
 
 1. Confirm Postgres reachable (`readyz`).
-2. Check application logs for `panic recovered`, `webhookworker`, or `retention` messages.
+2. Check application logs for `panic recovered`, `webhookworker`, or `retention` messages (JSON fields include `request_id` / `correlation_id` where applicable).
 3. Verify migrations applied on the target database version.
 4. For Stripe issues, confirm webhook secret matches the Stripe dashboard endpoint and that events are persisted (`webhook_events`).
+
+### Transaction rollback or stuck workflows
+
+1. Correlate failing requests using `request_id` from API error JSON and access logs (`http_request` lines).
+2. Inspect `business_workflow_conflict_total` and `http_requests_total` for spikes on `POST /v1/invoices/*` or `POST /v1/time-entries/*`.
+3. For suspected partial writes, confirm DB invariants: invoice generation and send are single transactions per [transaction-matrix.md](transaction-matrix.md); integration tests in `internal/integrationtest/rollback_test.go` document expected rollback behavior.
+4. For stuck time entries, verify row status in `time_entries` and recent `time_entry_events` for the tenant.
+
+## Local PR verification (operability)
+
+Before merging changes that touch workflows, metrics, or logging:
+
+- `gofmt ./...`, `go test ./...`, `go test -race ./...`
+- With Postgres migrated: `DATABASE_URL=... go test ./internal/integrationtest/...` (rollback tests exercise real transactions).
 
 ## API contract
 

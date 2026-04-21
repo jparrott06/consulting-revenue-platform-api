@@ -59,6 +59,8 @@ type TimeEntryRejectInput struct {
 	Reason string
 }
 
+// TimeEntryWorkflowService orchestrates time entry workflow actions.
+// Transaction ownership: each Submit/Approve/Reject call maps to one repo method that runs an atomic transaction (see docs/transaction-matrix.md).
 type TimeEntryWorkflowService struct {
 	store TimeEntryWorkflowStore
 }

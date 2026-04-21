@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/db"
 )
 
 // ErrInvalidTimeEntryTransition indicates the entry cannot move from current state.
@@ -31,16 +32,16 @@ func RejectTimeEntry(ctx context.Context, db *sql.DB, organizationID, entryID, a
 	return applyTimeEntryTransition(ctx, db, organizationID, entryID, actorUserID, "reject", "submitted", "draft", reason)
 }
 
-func applyTimeEntryTransition(ctx context.Context, db *sql.DB, organizationID, entryID, actorUserID uuid.UUID, action, fromStatus, toStatus, reason string) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback() }()
+func applyTimeEntryTransition(ctx context.Context, pool *sql.DB, organizationID, entryID, actorUserID uuid.UUID, action, fromStatus, toStatus, reason string) error {
+	return db.RunInTx(ctx, pool, nil, func(tx *sql.Tx) error {
+		return applyTimeEntryTransitionTx(ctx, tx, organizationID, entryID, actorUserID, action, fromStatus, toStatus, reason)
+	})
+}
 
+func applyTimeEntryTransitionTx(ctx context.Context, tx *sql.Tx, organizationID, entryID, actorUserID uuid.UUID, action, fromStatus, toStatus, reason string) error {
 	var status string
 	var ownerUserID uuid.UUID
-	err = tx.QueryRowContext(ctx, `
+	err := tx.QueryRowContext(ctx, `
 SELECT status, user_id
 FROM time_entries
 WHERE id = $1 AND organization_id = $2
@@ -82,9 +83,5 @@ WHERE id = $3 AND organization_id = $4`, actorUserID, reason, entryID, organizat
 INSERT INTO time_entry_events (organization_id, time_entry_id, actor_user_id, from_status, to_status, action, reason)
 VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''))`,
 		organizationID, entryID, actorUserID, fromStatus, toStatus, action, reason)
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	return err
 }

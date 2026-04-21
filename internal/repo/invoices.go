@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/db"
 )
 
 // ErrInvoiceNotFound indicates invoice does not exist for organization scope.
@@ -47,68 +48,62 @@ RETURNING next_number - 1`, organizationID).Scan(&allocated)
 }
 
 // CreateDraftInvoice creates a draft invoice with allocated per-org number in one transaction.
-func CreateDraftInvoice(ctx context.Context, db *sql.DB, organizationID uuid.UUID, currency string, dueAt *time.Time) (InvoiceRecord, error) {
+func CreateDraftInvoice(ctx context.Context, pool *sql.DB, organizationID uuid.UUID, currency string, dueAt *time.Time) (InvoiceRecord, error) {
 	currency, err := NormalizeCurrencyCode(currency)
 	if err != nil {
 		return InvoiceRecord{}, err
 	}
 
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return InvoiceRecord{}, err
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	number, err := AllocateNextInvoiceNumber(ctx, tx, organizationID)
-	if err != nil {
-		return InvoiceRecord{}, err
-	}
-
-	var due sql.NullTime
-	if dueAt != nil {
-		due = sql.NullTime{Time: dueAt.UTC(), Valid: true}
-	}
-
 	var rec InvoiceRecord
-	err = tx.QueryRowContext(ctx, `
+	err = db.RunInTx(ctx, pool, nil, func(tx *sql.Tx) error {
+		number, err := AllocateNextInvoiceNumber(ctx, tx, organizationID)
+		if err != nil {
+			return err
+		}
+
+		var due sql.NullTime
+		if dueAt != nil {
+			due = sql.NullTime{Time: dueAt.UTC(), Valid: true}
+		}
+
+		return tx.QueryRowContext(ctx, `
 INSERT INTO invoices (organization_id, invoice_number, status, currency, due_at)
 VALUES ($1, $2, 'draft', $3, $4)
 RETURNING id, organization_id, invoice_number, status, currency, subtotal_minor, tax_minor, total_minor, issued_at, due_at, created_at, updated_at`,
-		organizationID, number, currency, due,
-	).Scan(
-		&rec.ID,
-		&rec.OrganizationID,
-		&rec.InvoiceNumber,
-		&rec.Status,
-		&rec.Currency,
-		&rec.SubtotalMinor,
-		&rec.TaxMinor,
-		&rec.TotalMinor,
-		&rec.IssuedAt,
-		&rec.DueAt,
-		&rec.CreatedAt,
-		&rec.UpdatedAt,
-	)
-	if err != nil {
-		return InvoiceRecord{}, err
-	}
-	if err := tx.Commit(); err != nil {
-		return InvoiceRecord{}, err
-	}
-	return rec, nil
+			organizationID, number, currency, due,
+		).Scan(
+			&rec.ID,
+			&rec.OrganizationID,
+			&rec.InvoiceNumber,
+			&rec.Status,
+			&rec.Currency,
+			&rec.SubtotalMinor,
+			&rec.TaxMinor,
+			&rec.TotalMinor,
+			&rec.IssuedAt,
+			&rec.DueAt,
+			&rec.CreatedAt,
+			&rec.UpdatedAt,
+		)
+	})
+	return rec, err
 }
 
 // SendInvoice transitions a draft invoice to issued (sent), sets issued_at when first issued, and is
 // idempotent when the invoice is already issued.
-func SendInvoice(ctx context.Context, db *sql.DB, organizationID, invoiceID uuid.UUID) (InvoiceRecord, error) {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return InvoiceRecord{}, err
-	}
-	defer func() { _ = tx.Rollback() }()
-
+func SendInvoice(ctx context.Context, pool *sql.DB, organizationID, invoiceID uuid.UUID) (InvoiceRecord, error) {
 	var rec InvoiceRecord
-	err = tx.QueryRowContext(ctx, `
+	err := db.RunInTx(ctx, pool, nil, func(tx *sql.Tx) error {
+		var err error
+		rec, err = sendInvoiceTx(ctx, tx, organizationID, invoiceID)
+		return err
+	})
+	return rec, err
+}
+
+func sendInvoiceTx(ctx context.Context, tx *sql.Tx, organizationID, invoiceID uuid.UUID) (InvoiceRecord, error) {
+	var rec InvoiceRecord
+	err := tx.QueryRowContext(ctx, `
 UPDATE invoices
 SET status = 'issued', issued_at = COALESCE(issued_at, NOW()), updated_at = NOW()
 WHERE id = $1 AND organization_id = $2 AND status = 'draft'
@@ -134,9 +129,6 @@ RETURNING id, organization_id, invoice_number, status, currency, subtotal_minor,
 		}); err != nil {
 			return InvoiceRecord{}, err
 		}
-		if err := tx.Commit(); err != nil {
-			return InvoiceRecord{}, err
-		}
 		return rec, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -151,9 +143,6 @@ RETURNING id, organization_id, invoice_number, status, currency, subtotal_minor,
 		return InvoiceRecord{}, err
 	}
 	if rec.Status == "issued" {
-		if err := tx.Commit(); err != nil {
-			return InvoiceRecord{}, err
-		}
 		return rec, nil
 	}
 	return InvoiceRecord{}, ErrInvoiceNotSendable

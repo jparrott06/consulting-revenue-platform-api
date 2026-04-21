@@ -2,15 +2,20 @@ package retention
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
-	"log"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/config"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/jobworker"
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/repo"
 )
+
+var retentionLog = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 // RunOnce applies configured retention windows and returns rows removed per table.
 func RunOnce(ctx context.Context, db *sql.DB, cfg config.Config) (auditDeleted, webhookDeleted int64, err error) {
@@ -44,14 +49,23 @@ func Run(ctx context.Context, cfg config.Config, db *sql.DB) error {
 		interval = time.Hour
 	}
 	return jobworker.Poll(ctx, interval, func(ctx context.Context) error {
+		cid := newRetentionCorrelationID()
 		a, w, err := RunOnce(ctx, db, cfg)
 		if err != nil {
-			log.Printf("retention: run error: %v", err)
+			retentionLog.Error("retention run error", "component", "retention", "correlation_id", cid, "msg", err.Error())
 			return jobworker.ErrIdle
 		}
 		if a > 0 || w > 0 {
-			log.Printf("retention: removed audit_logs=%d webhook_events=%d", a, w)
+			retentionLog.Info("retention purge complete", "component", "retention", "correlation_id", cid, "audit_logs_removed", a, "webhook_events_removed", w)
 		}
 		return jobworker.ErrIdle
 	})
+}
+
+func newRetentionCorrelationID() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return hex.EncodeToString([]byte(time.Now().UTC().Format(time.RFC3339Nano)))
+	}
+	return hex.EncodeToString(b)
 }

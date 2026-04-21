@@ -42,10 +42,15 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 		defer func() {
 			if rec := recover(); rec != nil {
 				logPath, _ := logredact.SanitizeURL(r.URL)
+				route := r.Pattern
+				if route == "" {
+					route = "unmatched"
+				}
 				accessLogger.Error("panic recovered",
 					"request_id", requestIDFromContext(r.Context()),
 					"method", r.Method,
 					"path", logPath,
+					"route", route,
 				)
 				writeError(r.Context(), w, http.StatusInternalServerError, "internal_error", "internal server error", nil)
 			}

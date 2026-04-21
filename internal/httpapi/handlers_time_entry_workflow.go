@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 	"strings"
@@ -58,7 +59,7 @@ func handleSubmitTimeEntry(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		ActorRole:      p.Role,
 	})
 	if err != nil {
-		writeUsecaseError(ctx, w, err)
+		writeTimeEntryWorkflowUsecaseError(ctx, w, err, "submit")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -87,7 +88,7 @@ func handleApproveTimeEntry(w http.ResponseWriter, r *http.Request, db *sql.DB) 
 		ActorRole:      p.Role,
 	})
 	if err != nil {
-		writeUsecaseError(ctx, w, err)
+		writeTimeEntryWorkflowUsecaseError(ctx, w, err, "approve")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -129,8 +130,15 @@ func handleRejectTimeEntry(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		Reason: req.Reason,
 	})
 	if err != nil {
-		writeUsecaseError(ctx, w, err)
+		writeTimeEntryWorkflowUsecaseError(ctx, w, err, "reject")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func writeTimeEntryWorkflowUsecaseError(ctx context.Context, w http.ResponseWriter, err error, action string) {
+	if usecase.Kind(err) == usecase.ErrorKindConflict {
+		recordWorkflowConflict("time_entry", action)
+	}
+	writeUsecaseError(ctx, w, err)
 }
