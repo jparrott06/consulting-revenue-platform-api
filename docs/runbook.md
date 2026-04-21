@@ -47,6 +47,33 @@ make seed                    # or: go run ./cmd/seed
 
 Login: `owner@demo.local` / `DemoPass1!` (see `cmd/seed` log line). Organization ID is fixed in `internal/seed` for repeatable demos.
 
+### Seed presets and scenario toggles
+
+The seed command supports named presets for showcase scenarios:
+
+```bash
+# Minimal: org + owner (+ contractors), no seeded billing entities
+go run ./cmd/seed --preset minimal --contractors 1
+
+# Happy path (default): org/users + client/project + draft time entry
+go run ./cmd/seed --preset happy-path --contractors 1
+
+# Conflict path: same base data but time entry starts submitted by default
+go run ./cmd/seed --preset conflict-path --contractors 1
+```
+
+Optional toggles:
+
+- `--contractors N`: deterministic contractor memberships (`demo-contractor-1@demo.local`, ...).
+- `--seed-submitted-time`: move seeded time entry to `submitted`.
+- `--seed-approved-time`: move seeded time entry to `approved` (implies submitted).
+
+Preset guidance:
+
+- **minimal**: fastest smoke checks for auth/tenant context only.
+- **happy-path**: default portfolio walkthrough setup.
+- **conflict-path**: pre-staged for approval/review edge-case demos.
+
 ## Operational retention
 
 Purge **eligible** operational rows older than configured windows (does not touch invoices, ledger, payments, or business entities):

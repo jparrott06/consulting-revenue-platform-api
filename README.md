@@ -97,6 +97,8 @@ See the contributor runbook workflow: [docs/runbook.md#api-governance-checklist-
 
 **End-to-end API demo:** With Postgres migrated and the server listening (e.g. `http://localhost:8080`), run `make demo-api` or `./scripts/demo-api.sh` (requires `curl` and `jq`). The script now enforces assertions for critical workflow transitions, exits non-zero on mismatches, and writes a machine-readable summary report (default `./tmp/demo-api-report.json`). Optional isolation mode: `./scripts/demo-api.sh --cleanup` deactivates the synthetic org at the end.
 
+**Seed presets for showcase scenarios:** `go run ./cmd/seed --preset minimal|happy-path|conflict-path --contractors 1` with optional `--seed-submitted-time` / `--seed-approved-time`. See [docs/runbook.md](docs/runbook.md) for preset expectations.
+
 ## Intended V1 Product Scope
 
 The target backend is a multi-tenant API where each tenant is an `organization`.
