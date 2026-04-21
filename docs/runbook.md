@@ -112,6 +112,12 @@ Structured log fields for HTTP are documented in [logging.md](logging.md). Trans
 sum(rate(stripe_webhook_worker_outcomes_total{outcome="retry"}[15m])) by (event_category)
 ```
 
+### Reconciliation (ledger vs paid invoices)
+
+- **Endpoint:** `GET /v1/admin/reconciliation-summary` (owner / `admin.ops` only; same auth as `GET /v1/admin/ping`).
+- **Meaning:** For each currency, compares the sum of ledger `payment_captured` rows to the sum of `payments` rows tied to invoices in `paid` status. **`drift_minor`** is ledger minus paid-invoice payments; **`aligned`** is true when `drift_minor` is zero.
+- **When drift is non-zero:** Confirm Stripe webhook delivery and worker processing (`webhook_events`, worker logs). Check for manual DB edits, duplicate captures, or invoices marked paid without a matching ledger append (see [transaction-matrix.md](transaction-matrix.md)). This check is read-only; it does not fix data or call Stripe.
+
 ## Incident basics
 
 1. Confirm Postgres reachable (`readyz`).
