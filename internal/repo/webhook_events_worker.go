@@ -53,30 +53,34 @@ UPDATE webhook_events SET processed_at = NOW(), processing_error = NULL WHERE id
 
 // RecordStripeWebhookFailure increments attempt_count, stores processing_error, and optionally
 // dead-letters the event when attempt_count reaches maxAttempts (terminal failure).
-func RecordStripeWebhookFailure(ctx context.Context, tx *sql.Tx, id uuid.UUID, maxAttempts int, errText string) error {
+// The returned terminal flag is true when the event will not be retried (dead-letter path).
+func RecordStripeWebhookFailure(ctx context.Context, tx *sql.Tx, id uuid.UUID, maxAttempts int, errText string) (terminal bool, err error) {
 	if len(errText) > 2000 {
 		errText = errText[:2000]
 	}
 	var newAttempt int
-	err := tx.QueryRowContext(ctx, `
+	err = tx.QueryRowContext(ctx, `
 UPDATE webhook_events
 SET attempt_count = attempt_count + 1,
     processing_error = $2
 WHERE id = $1
 RETURNING attempt_count`, id, errText).Scan(&newAttempt)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if newAttempt < maxAttempts {
-		return nil
+		return false, nil
 	}
 	dlqPayload, jerr := json.Marshal(map[string]string{"webhook_event_id": id.String()})
 	if jerr != nil {
-		return jerr
+		return false, jerr
 	}
 	if err := InsertDeadLetterTx(ctx, tx, "stripe_webhooks", dlqPayload, newAttempt, errText); err != nil {
-		return err
+		return false, err
 	}
 	_, err = tx.ExecContext(ctx, `UPDATE webhook_events SET processed_at = NOW() WHERE id = $1`, id)
-	return err
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

@@ -31,8 +31,14 @@ func ProcessOne(ctx context.Context, db *sql.DB, cfg config.Config) error {
 	}
 
 	if err := handleStripeWebhook(ctx, tx, row); err != nil {
-		if rerr := repo.RecordStripeWebhookFailure(ctx, tx, row.ID, max, err.Error()); rerr != nil {
+		terminal, rerr := repo.RecordStripeWebhookFailure(ctx, tx, row.ID, max, err.Error())
+		if rerr != nil {
 			return rerr
+		}
+		if terminal {
+			recordStripeWebhookOutcome(row.EventType, "terminal")
+		} else {
+			recordStripeWebhookOutcome(row.EventType, "retry")
 		}
 		return tx.Commit()
 	}
@@ -40,5 +46,6 @@ func ProcessOne(ctx context.Context, db *sql.DB, cfg config.Config) error {
 	if err := repo.MarkStripeWebhookProcessed(ctx, tx, row.ID); err != nil {
 		return err
 	}
+	recordStripeWebhookOutcome(row.EventType, "success")
 	return tx.Commit()
 }
