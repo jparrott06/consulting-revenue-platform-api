@@ -454,12 +454,12 @@
     },
     {
       "story_id": "L-05",
-      "status": "in_review",
+      "status": "done",
       "owner": "agent",
-      "branch": "feat/L-05-epic-l-docs",
-      "pr_url": "",
+      "branch": "main",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/49",
       "last_updated": "2026-04-21T06:00:00Z",
-      "notes": "OpenAPI + README + .env.example for Epic L; PR pending."
+      "notes": "Epic L: OpenAPI + README + .env.example; merged PR #49."
     }
   ]
 }
