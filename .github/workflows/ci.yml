@@ -79,6 +79,20 @@ jobs:
   unit-test:
     name: unit-test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -100,8 +114,16 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Migrate database for integration tests
+        if: steps.detect.outputs.has_go == 'true'
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_ci?sslmode=disable
+        run: go run ./cmd/migrate -direction up
+
       - name: Run unit tests
         if: steps.detect.outputs.has_go == 'true'
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_ci?sslmode=disable
         run: go test ./...
 
       - name: Skip tests (no Go module yet)
@@ -111,6 +133,20 @@ jobs:
   race-test:
     name: race-test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: race_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -132,8 +168,16 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Migrate database for integration tests
+        if: steps.detect.outputs.has_go == 'true'
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/race_ci?sslmode=disable
+        run: go run ./cmd/migrate -direction up
+
       - name: Run race tests
         if: steps.detect.outputs.has_go == 'true'
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/race_ci?sslmode=disable
         run: go test -race ./...
 
       - name: Skip race tests (no Go module yet)

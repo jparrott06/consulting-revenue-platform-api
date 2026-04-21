@@ -72,6 +72,8 @@ type InvoiceSendInput struct {
 	ActorUserID    uuid.UUID
 }
 
+// InvoiceWorkflowService orchestrates invoice generation and send.
+// Transaction ownership: Generate and Send each map to one repository call that wraps a single database transaction (see docs/transaction-matrix.md).
 type InvoiceWorkflowService struct {
 	store InvoiceStore
 	audit InvoiceAuditLogger

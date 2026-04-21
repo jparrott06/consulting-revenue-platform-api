@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/jparrott06/consulting-revenue-platform-api/internal/logredact"
@@ -16,14 +15,14 @@ var (
 	httpRequestsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
-			Help: "Total HTTP requests processed.",
+			Help: "Total HTTP requests processed (RED rate/errors; labels are low-cardinality).",
 		},
-		[]string{"method", "code", "route"},
+		[]string{"method", "route", "status_class"},
 	)
 	httpRequestDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "http_request_duration_seconds",
-			Help:    "HTTP request duration in seconds.",
+			Help:    "HTTP request duration in seconds (RED duration).",
 			Buckets: prometheus.DefBuckets,
 		},
 		[]string{"method", "route"},
@@ -44,8 +43,7 @@ func observabilityMiddleware(next http.Handler) http.Handler {
 		if route == "" {
 			route = "unmatched"
 		}
-		codeStr := strconv.Itoa(rec.statusCode)
-		httpRequestsTotal.WithLabelValues(r.Method, codeStr, route).Inc()
+		httpRequestsTotal.WithLabelValues(r.Method, route, statusClass(rec.statusCode)).Inc()
 		httpRequestDuration.WithLabelValues(r.Method, route).Observe(time.Since(started).Seconds())
 
 		logPath, logQuery := logredact.SanitizeURL(r.URL)
@@ -63,4 +61,19 @@ func observabilityMiddleware(next http.Handler) http.Handler {
 		}
 		accessLogger.Info("http_request", args...)
 	})
+}
+
+func statusClass(code int) string {
+	switch {
+	case code >= 200 && code < 300:
+		return "2xx"
+	case code >= 300 && code < 400:
+		return "3xx"
+	case code >= 400 && code < 500:
+		return "4xx"
+	case code >= 500:
+		return "5xx"
+	default:
+		return "other"
+	}
 }

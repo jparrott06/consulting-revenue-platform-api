@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jparrott06/consulting-revenue-platform-api/internal/db"
 )
 
 // ErrNoEligibleTimeEntries is returned when no approved uninvoiced entries exist for range.
@@ -27,18 +28,23 @@ type GenerateInvoiceParams struct {
 	DueAt    *time.Time
 }
 
-func GenerateInvoiceFromApprovedEntries(ctx context.Context, db *sql.DB, organizationID uuid.UUID, params GenerateInvoiceParams) (InvoiceRecord, error) {
+func GenerateInvoiceFromApprovedEntries(ctx context.Context, pool *sql.DB, organizationID uuid.UUID, params GenerateInvoiceParams) (InvoiceRecord, error) {
 	currency, err := NormalizeCurrencyCode(params.Currency)
 	if err != nil {
 		return InvoiceRecord{}, err
 	}
+	params.Currency = currency
 
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return InvoiceRecord{}, err
-	}
-	defer func() { _ = tx.Rollback() }()
+	var invoice InvoiceRecord
+	err = db.RunInTx(ctx, pool, nil, func(tx *sql.Tx) error {
+		var err error
+		invoice, err = generateInvoiceFromApprovedEntriesTx(ctx, tx, organizationID, params)
+		return err
+	})
+	return invoice, err
+}
 
+func generateInvoiceFromApprovedEntriesTx(ctx context.Context, tx *sql.Tx, organizationID uuid.UUID, params GenerateInvoiceParams) (InvoiceRecord, error) {
 	number, err := AllocateNextInvoiceNumber(ctx, tx, organizationID)
 	if err != nil {
 		return InvoiceRecord{}, err
@@ -54,7 +60,7 @@ func GenerateInvoiceFromApprovedEntries(ctx context.Context, db *sql.DB, organiz
 INSERT INTO invoices (organization_id, invoice_number, status, currency, due_at)
 VALUES ($1, $2, 'draft', $3, $4)
 RETURNING id, organization_id, invoice_number, status, currency, subtotal_minor, tax_minor, total_minor, issued_at, due_at, created_at, updated_at`,
-		organizationID, number, currency, due,
+		organizationID, number, params.Currency, due,
 	).Scan(
 		&invoice.ID,
 		&invoice.OrganizationID,
@@ -145,9 +151,6 @@ WHERE id = $2 AND organization_id = $3`, subtotal, invoice.ID, organizationID); 
 
 	invoice.SubtotalMinor = subtotal
 	invoice.TotalMinor = subtotal
-	if err := tx.Commit(); err != nil {
-		return InvoiceRecord{}, err
-	}
 	return invoice, nil
 }
 

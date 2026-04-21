@@ -37,7 +37,7 @@ Avoid importing `httpapi` or `repo` into `domain`.
 - **Authorization**
   - Role/membership checks at transport edge before use-case execution.
 - **Transactions**
-  - Start/commit/rollback from use-case layer when workflow spans multiple writes.
+  - Start/commit/rollback are implemented at the repository boundary using `internal/db.RunInTx` for critical workflows; use-case methods call a single repository operation per HTTP action. See [transaction-matrix.md](transaction-matrix.md).
 
 ## Contribution checklist (API/workflow changes)
 

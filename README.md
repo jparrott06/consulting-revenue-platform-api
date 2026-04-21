@@ -54,6 +54,8 @@ make run
 - Operations: [docs/runbook.md](docs/runbook.md)
 - Threats and controls: [docs/threat-model.md](docs/threat-model.md)
 - Architecture boundaries: [docs/architecture-boundaries.md](docs/architecture-boundaries.md)
+- Transaction ownership (critical routes): [docs/transaction-matrix.md](docs/transaction-matrix.md)
+- Structured logging fields: [docs/logging.md](docs/logging.md)
 
 **OpenAPI validation:** `make openapi-validate` (requires Python with `openapi-spec-validator` and `pyyaml`).
 
