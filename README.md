@@ -53,6 +53,7 @@ make run
 - API contract: [docs/openapi.yaml](docs/openapi.yaml)
 - Operations: [docs/runbook.md](docs/runbook.md)
 - Threats and controls: [docs/threat-model.md](docs/threat-model.md)
+- API compatibility and deprecation policy: [docs/api-compatibility.md](docs/api-compatibility.md)
 - Architecture boundaries: [docs/architecture-boundaries.md](docs/architecture-boundaries.md)
 - Transaction ownership (critical routes): [docs/transaction-matrix.md](docs/transaction-matrix.md)
 - Structured logging fields: [docs/logging.md](docs/logging.md)
@@ -87,6 +88,8 @@ make run
    ```
 
 **OpenAPI validation:** `make openapi-validate` (requires Python with `openapi-spec-validator` and `pyyaml`).
+
+**API change policy:** Any API-touching PR must follow [docs/api-compatibility.md](docs/api-compatibility.md) for compatibility classification, OpenAPI updates, and deprecation handling.
 
 **End-to-end API demo:** With Postgres migrated and the server listening (e.g. `http://localhost:8080`), run `make demo-api` or `./scripts/demo-api.sh` (requires `curl` and `jq`). The script registers an owner and contractor, creates client/project, runs submit → approve → generate → send invoice, and prints JSON along the way. Override the base URL with `BASE_URL=https://... ./scripts/demo-api.sh`.
 

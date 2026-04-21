@@ -45,4 +45,5 @@ Avoid importing `httpapi` or `repo` into `domain`.
 2. Add/update use-case method with typed errors.
 3. Adapt repository implementation behind interface.
 4. Keep handler changes focused on DTO parsing + error mapping.
-5. Add tests at domain/use-case layer plus endpoint regression checks.
+5. Classify API compatibility impact per [api-compatibility.md](api-compatibility.md) and update OpenAPI for any API change.
+6. Add tests at domain/use-case layer plus endpoint regression checks.
