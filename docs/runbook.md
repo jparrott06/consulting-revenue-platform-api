@@ -103,6 +103,15 @@ sum(rate(business_workflow_conflict_total[5m])) by (domain, action)
 
 Structured log fields for HTTP are documented in [logging.md](logging.md). Transaction ownership for critical routes is in [transaction-matrix.md](transaction-matrix.md).
 
+### Stripe webhooks
+
+- Event type → handler mapping: [stripe-webhook-matrix.md](stripe-webhook-matrix.md).
+- Worker metric: `stripe_webhook_worker_outcomes_total{event_category,outcome}` (e.g. `outcome="success"` vs `retry` vs `terminal`).
+
+```promql
+sum(rate(stripe_webhook_worker_outcomes_total{outcome="retry"}[15m])) by (event_category)
+```
+
 ## Incident basics
 
 1. Confirm Postgres reachable (`readyz`).

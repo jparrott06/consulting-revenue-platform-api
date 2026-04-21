@@ -56,6 +56,7 @@ make run
 - Architecture boundaries: [docs/architecture-boundaries.md](docs/architecture-boundaries.md)
 - Transaction ownership (critical routes): [docs/transaction-matrix.md](docs/transaction-matrix.md)
 - Structured logging fields: [docs/logging.md](docs/logging.md)
+- Stripe webhooks (ingest vs worker): [docs/stripe-webhook-matrix.md](docs/stripe-webhook-matrix.md)
 
 **OpenAPI validation:** `make openapi-validate` (requires Python with `openapi-spec-validator` and `pyyaml`).
 

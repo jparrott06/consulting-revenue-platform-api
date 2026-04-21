@@ -507,11 +507,20 @@ paths:
           type: string
           format: uuid
     post:
+      summary: Create or return Stripe payment link for an invoice
+      description: |
+        Idempotent per invoice: if a payment row already exists for this invoice, the existing
+        Stripe payment link is returned. Otherwise the server creates Stripe Price and Payment Link
+        resources using stable idempotency keys derived from the invoice id (see `stripepay` package).
       tags: [Invoices]
       security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: Payment link
+        "409":
+          description: Invoice not eligible for payment link
+        "404":
+          description: Invoice not found
   /v1/ledger:
     get:
       tags: [Ledger]
@@ -593,7 +602,8 @@ paths:
       summary: Stripe webhook receiver
       description: |
         Verifies `Stripe-Signature` using the configured webhook secret.
-        Idempotent on Stripe `event.id`.
+        Idempotent on Stripe `event.id`. Persists the event for asynchronous processing by the
+        webhook worker; see docs/stripe-webhook-matrix.md.
       parameters:
         - in: header
           name: Stripe-Signature
