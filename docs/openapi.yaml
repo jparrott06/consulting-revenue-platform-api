@@ -220,6 +220,49 @@ paths:
           description: OK
         "403":
           description: Forbidden
+  /v1/admin/reconciliation-summary:
+    get:
+      tags: [Admin]
+      summary: Owner-only reconciliation of ledger payment captures vs paid invoice payments
+      description: |
+        Compares sums of `ledger_entries` with `event_type` payment_captured to sums of `payments.amount_minor`
+        for invoices in `paid` status, per currency. Non-zero `drift_minor` indicates investigation is needed.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: header
+          name: X-Organization-ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Summary per currency
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currencies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        currency:
+                          type: string
+                        ledger_payment_captured_minor:
+                          type: integer
+                          format: int64
+                        paid_invoice_payments_minor:
+                          type: integer
+                          format: int64
+                        drift_minor:
+                          type: integer
+                          format: int64
+                        aligned:
+                          type: boolean
+        "403":
+          description: Forbidden
   /v1/organizations/{organizationID}/deactivate:
     post:
       tags: [Organizations]
