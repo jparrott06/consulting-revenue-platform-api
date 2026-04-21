@@ -60,6 +60,7 @@ make run
 - Structured logging fields: [docs/logging.md](docs/logging.md)
 - Stripe webhooks (ingest vs worker): [docs/stripe-webhook-matrix.md](docs/stripe-webhook-matrix.md)
 - Showcase demo narrative and success criteria: [docs/showcase-demo-narrative.md](docs/showcase-demo-narrative.md)
+- End-to-end showcase and recording guide (primary demo entrypoint): [docs/showcase-guide.md](docs/showcase-guide.md)
 - Lightweight frontend demo shell: [demo-ui/README.md](demo-ui/README.md)
 
 **Stripe payments and webhooks (local quickstart)**
@@ -95,7 +96,7 @@ make run
 **API change policy:** Any API-touching PR must follow [docs/api-compatibility.md](docs/api-compatibility.md) for compatibility classification, OpenAPI updates, and deprecation handling.
 See the contributor runbook workflow: [docs/runbook.md#api-governance-checklist-contract-changes](docs/runbook.md#api-governance-checklist-contract-changes).
 
-**End-to-end API demo:** With Postgres migrated and the server listening (e.g. `http://localhost:8080`), run `make demo-api` or `./scripts/demo-api.sh` (requires `curl` and `jq`). The script now enforces assertions for critical workflow transitions, exits non-zero on mismatches, and writes a machine-readable summary report (default `./tmp/demo-api-report.json`). Optional isolation mode: `./scripts/demo-api.sh --cleanup` deactivates the synthetic org at the end.
+**End-to-end API demo:** Start with [docs/showcase-guide.md](docs/showcase-guide.md) (primary entrypoint). With Postgres migrated and the server listening (e.g. `http://localhost:8080`), run `make demo-api` or `./scripts/demo-api.sh` (requires `curl` and `jq`). The script enforces assertions for critical workflow transitions, exits non-zero on mismatches, and writes a machine-readable summary report (default `./tmp/demo-api-report.json`). Optional isolation mode: `./scripts/demo-api.sh --cleanup` deactivates the synthetic org at the end.
 
 **Seed presets for showcase scenarios:** `go run ./cmd/seed --preset minimal|happy-path|conflict-path --contractors 1` with optional `--seed-submitted-time` / `--seed-approved-time`. See [docs/runbook.md](docs/runbook.md) for preset expectations.
 
