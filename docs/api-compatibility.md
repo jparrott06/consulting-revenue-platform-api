@@ -35,8 +35,9 @@ Any PR that changes HTTP routes, request/response payloads, or error envelopes m
 
 1. Update `docs/openapi.yaml` in the same PR.
 2. Classify the change as additive, behavior-changing, or breaking.
-3. Include tests for changed behavior (or explain why existing coverage is sufficient).
-4. Update relevant docs (README/runbook) when consumer behavior changes.
+3. Keep OpenAPI/runtime parity checks green (`TestOpenAPIRouteCoverage`), and update internal-route allowlist only for intentionally undocumented endpoints.
+4. Include tests for changed behavior (or explain why existing coverage is sufficient).
+5. Update relevant docs (README/runbook) when consumer behavior changes.
 
 ## Example classifications
 
