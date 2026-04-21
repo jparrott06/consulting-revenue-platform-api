@@ -358,6 +358,12 @@ paths:
       responses:
         "204":
           description: Updated
+    delete:
+      tags: [Memberships]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Deleted
   /v1/clients:
     get:
       tags: [Clients]
