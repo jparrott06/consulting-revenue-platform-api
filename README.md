@@ -58,6 +58,34 @@ make run
 - Structured logging fields: [docs/logging.md](docs/logging.md)
 - Stripe webhooks (ingest vs worker): [docs/stripe-webhook-matrix.md](docs/stripe-webhook-matrix.md)
 
+**Stripe payments and webhooks (local quickstart)**
+
+1. **Secrets** — Set `STRIPE_SECRET_KEY` (payment links) and `STRIPE_WEBHOOK_SECRET` (webhook verification) from environment variables only. Never commit them. See [docs/threat-model.md](docs/threat-model.md).
+
+2. **Forward Stripe webhooks to your local API** with the [Stripe CLI](https://stripe.com/docs/stripe-cli):
+
+   ```bash
+   stripe listen --forward-to localhost:8080/webhooks/stripe
+   ```
+
+   The CLI prints a webhook signing secret (`whsec_...`). Export it in the shell where you run the API:
+
+   ```bash
+   export STRIPE_WEBHOOK_SECRET='whsec_...'
+   ```
+
+   Start Postgres, run migrations, then `make run` (or `go run ./cmd/api`). If you use a port other than `8080`, change the URL in `stripe listen` and match `HTTP_ADDR` in your environment.
+
+3. **Worker** — Persisted events are processed when `WEBHOOK_WORKER_ENABLED=true` (see [docs/runbook.md](docs/runbook.md)). Event routing: [docs/stripe-webhook-matrix.md](docs/stripe-webhook-matrix.md).
+
+4. **Reconciliation** — Owners can call `GET /v1/admin/reconciliation-summary` (owner JWT + `X-Organization-ID`). How to read drift: [docs/runbook.md](docs/runbook.md) (Reconciliation section).
+
+5. **Test events** (optional, with `stripe listen` running):
+
+   ```bash
+   stripe trigger payment_intent.succeeded
+   ```
+
 **OpenAPI validation:** `make openapi-validate` (requires Python with `openapi-spec-validator` and `pyyaml`).
 
 **End-to-end API demo:** With Postgres migrated and the server listening (e.g. `http://localhost:8080`), run `make demo-api` or `./scripts/demo-api.sh` (requires `curl` and `jq`). The script registers an owner and contractor, creates client/project, runs submit → approve → generate → send invoice, and prints JSON along the way. Override the base URL with `BASE_URL=https://... ./scripts/demo-api.sh`.

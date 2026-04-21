@@ -5,6 +5,10 @@ info:
   description: |
     Multi-tenant API for time tracking, invoicing, Stripe payments, ledger, and reporting.
     Authenticated routes require `Authorization: Bearer <access_token>` and `X-Organization-ID: <uuid>`.
+
+    **Stripe:** Payment links use `STRIPE_SECRET_KEY`; webhook signature verification uses `STRIPE_WEBHOOK_SECRET`
+    (environment variables only—never embed in clients or commit to source control). See README and
+    [threat-model.md](threat-model.md). Async processing is described in [stripe-webhook-matrix.md](stripe-webhook-matrix.md).
 servers:
   - url: http://localhost:8080
     description: Local development
@@ -61,6 +65,38 @@ components:
         token_type:
           type: string
           example: Bearer
+    InvoicePaymentLinkResponse:
+      type: object
+      required:
+        - invoice_id
+        - payment_url
+        - stripe_payment_link_id
+        - amount_minor
+        - currency
+      properties:
+        invoice_id:
+          type: string
+          format: uuid
+        payment_url:
+          type: string
+          format: uri
+        stripe_payment_link_id:
+          type: string
+        amount_minor:
+          type: integer
+          format: int64
+        currency:
+          type: string
+          description: ISO 4217 uppercase (e.g. USD)
+    StripeWebhookAcceptedResponse:
+      type: object
+      required: [received, inserted]
+      properties:
+        received:
+          type: boolean
+        inserted:
+          type: boolean
+          description: False when the same Stripe event id was already stored (idempotent replay).
 paths:
   /healthz:
     get:
@@ -549,17 +585,34 @@ paths:
         schema:
           type: string
           format: uuid
+      - in: header
+        name: X-Organization-ID
+        required: true
+        schema:
+          type: string
+          format: uuid
     post:
       summary: Create or return Stripe payment link for an invoice
       description: |
         Idempotent per invoice: if a payment row already exists for this invoice, the existing
         Stripe payment link is returned. Otherwise the server creates Stripe Price and Payment Link
         resources using stable idempotency keys derived from the invoice id (see `stripepay` package).
+        Requires `STRIPE_SECRET_KEY` in the API environment.
       tags: [Invoices]
       security: [{ bearerAuth: [] }]
       responses:
         "200":
-          description: Payment link
+          description: Payment link payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoicePaymentLinkResponse"
+        "503":
+          description: Stripe API not configured (`STRIPE_SECRET_KEY` missing)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
         "409":
           description: Invoice not eligible for payment link
         "404":
@@ -644,9 +697,9 @@ paths:
       tags: [Webhooks]
       summary: Stripe webhook receiver
       description: |
-        Verifies `Stripe-Signature` using the configured webhook secret.
-        Idempotent on Stripe `event.id`. Persists the event for asynchronous processing by the
-        webhook worker; see docs/stripe-webhook-matrix.md.
+        Verifies `Stripe-Signature` using `STRIPE_WEBHOOK_SECRET` (never passed in the request body).
+        Idempotent on Stripe `event.id`. Persists the event for asynchronous processing when
+        `WEBHOOK_WORKER_ENABLED` is set; see [stripe-webhook-matrix.md](stripe-webhook-matrix.md).
       parameters:
         - in: header
           name: Stripe-Signature
@@ -662,9 +715,31 @@ paths:
               description: Raw Stripe event JSON
       responses:
         "200":
-          description: Event accepted
+          description: Event accepted (may be duplicate replay; see `inserted`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripeWebhookAcceptedResponse"
         "400":
-          description: Invalid signature or body
+          description: Invalid signature, missing signature, or unreadable body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+        "413":
+          description: Request body exceeds server limit (1 MiB)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+        "503":
+          description: Database not configured or `STRIPE_WEBHOOK_SECRET` not set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+        "500":
+          description: Persistence failure
           content:
             application/json:
               schema:
