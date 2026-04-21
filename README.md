@@ -60,6 +60,7 @@ make run
 - Structured logging fields: [docs/logging.md](docs/logging.md)
 - Stripe webhooks (ingest vs worker): [docs/stripe-webhook-matrix.md](docs/stripe-webhook-matrix.md)
 - Showcase demo narrative and success criteria: [docs/showcase-demo-narrative.md](docs/showcase-demo-narrative.md)
+- Lightweight frontend demo shell: [demo-ui/README.md](demo-ui/README.md)
 
 **Stripe payments and webhooks (local quickstart)**
 

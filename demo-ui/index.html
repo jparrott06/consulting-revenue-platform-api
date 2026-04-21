@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consulting Revenue API Demo UI</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main>
+    <h1>Consulting Revenue API Demo UI</h1>
+    <p class="muted">Lightweight frontend shell for local API walkthroughs.</p>
+
+    <section class="card">
+      <h2>Connection</h2>
+      <label>API base URL
+        <input id="apiBaseUrl" type="text" placeholder="http://localhost:8080" />
+      </label>
+      <label>Organization ID
+        <input id="orgId" type="text" placeholder="tenant UUID" />
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Auth</h2>
+      <div class="row">
+        <label>Email
+          <input id="email" type="email" placeholder="owner@demo.local" />
+        </label>
+        <label>Password
+          <input id="password" type="password" value="DemoPass1!" />
+        </label>
+      </div>
+      <button id="loginBtn">Login</button>
+      <div id="authState" class="status"></div>
+    </section>
+
+    <section class="card">
+      <h2>Read Views</h2>
+      <div class="actions">
+        <button id="meBtn">GET /v1/me</button>
+        <button id="clientsBtn">GET /v1/clients</button>
+        <button id="projectsBtn">GET /v1/projects</button>
+        <button id="timeEntriesBtn">GET /v1/time-entries</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Workflow Actions</h2>
+      <div class="row">
+        <label>Time entry ID
+          <input id="timeEntryId" type="text" placeholder="time_entry UUID" />
+        </label>
+        <button id="submitBtn">POST /submit</button>
+        <button id="approveBtn">POST /approve</button>
+      </div>
+      <div class="row">
+        <label>Invoice from date
+          <input id="invoiceFromDate" type="date" />
+        </label>
+        <label>Invoice to date
+          <input id="invoiceToDate" type="date" />
+        </label>
+        <button id="generateInvoiceBtn">POST /v1/invoices/generate</button>
+      </div>
+      <div class="row">
+        <label>Invoice ID
+          <input id="invoiceId" type="text" placeholder="invoice UUID" />
+        </label>
+        <button id="sendInvoiceBtn">POST /v1/invoices/{id}/send</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Response</h2>
+      <pre id="output"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
