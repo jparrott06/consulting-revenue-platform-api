@@ -13,6 +13,12 @@
 - [ ] Criterion 2 -> evidence:
 - [ ] Criterion 3 -> evidence:
 
+## API Compatibility Classification (required when `docs/openapi.yaml` changes)
+
+- Classification: `none`
+- Rationale:
+- If `breaking`, confirm explicit approval label `api-breaking-approved` is present.
+
 ## Security and Privacy Notes
 
 - Threats considered:
