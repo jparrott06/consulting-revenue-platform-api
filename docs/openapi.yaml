@@ -97,6 +97,62 @@ components:
         inserted:
           type: boolean
           description: False when the same Stripe event id was already stored (idempotent replay).
+    CurrencyTotal:
+      type: object
+      required: [amount_minor, invoice_count]
+      properties:
+        amount_minor:
+          type: integer
+          format: int64
+        invoice_count:
+          type: integer
+          format: int64
+    OutstandingReport:
+      type: object
+      required: [as_of, timezone, by_currency]
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        by_currency:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CurrencyTotal"
+    InvoiceSendResponse:
+      type: object
+      required:
+        - id
+        - invoice_number
+        - status
+        - subtotal_minor
+        - tax_minor
+        - total_minor
+        - currency
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoice_number:
+          type: integer
+          format: int64
+        status:
+          type: string
+        subtotal_minor:
+          type: integer
+          format: int64
+        tax_minor:
+          type: integer
+          format: int64
+        total_minor:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
 paths:
   /healthz:
     get:
@@ -487,6 +543,24 @@ paths:
       responses:
         "204":
           description: Approved
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
   /v1/time-entries/{timeEntryID}/reject:
     parameters:
       - in: path
@@ -534,8 +608,30 @@ paths:
       tags: [Invoices]
       security: [{ bearerAuth: [] }]
       responses:
-        "204":
+        "200":
           description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceSendResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+        "404":
+          description: Invoice not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+        "409":
+          description: Invoice cannot be sent in current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
   /v1/invoices/{invoiceID}/line-items:
     parameters:
       - in: path
@@ -644,6 +740,16 @@ paths:
       responses:
         "200":
           description: Report payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutstandingReport"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
   /v1/reports/paid-this-month:
     get:
       tags: [Reports]
