@@ -63,6 +63,16 @@
       "id": "CAT-J",
       "name": "Domain and Use-Case Architecture",
       "description": "Refactor critical business workflows into explicit domain/use-case layers while keeping API contracts stable."
+    },
+    {
+      "id": "CAT-K",
+      "name": "Transactional Integrity and Operability",
+      "description": "Explicit transaction boundaries for money-critical workflows, rollback proofs, RED metrics, structured logging, and operator runbooks."
+    },
+    {
+      "id": "CAT-L",
+      "name": "Stripe Integration and Payment Reliability",
+      "description": "Harden Stripe webhooks, payment links, and reconciliation with tests and documentation aligned with observability from Epic K."
     }
   ],
   "stories": [
@@ -380,6 +390,497 @@
       ],
       "estimate_points": 2,
       "priority": "P1"
+    },
+    {
+      "id": "K-01",
+      "category": "CAT-K",
+      "title": "Define transaction-boundary matrix and shared RunInTx helper for critical workflows",
+      "description": "Document where money-critical transactions begin and end; centralize commit/rollback in internal/db.RunInTx and apply across repository boundaries.",
+      "scope": [
+        "Add docs/transaction-matrix.md mapping routes to repository transaction owners.",
+        "Implement db.RunInTx and refactor critical repo paths (time entry workflow, invoice generation/send, registration).",
+        "Link matrix from architecture-boundaries.md."
+      ],
+      "out_of_scope": [
+        "Distributed transactions across databases.",
+        "Changing public API paths or payloads."
+      ],
+      "dependencies": [
+        "J-03"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "time_entries",
+          "invoices",
+          "invoice_line_items",
+          "ledger_entries",
+          "audit_logs"
+        ]
+      },
+      "implementation_notes": [
+        "Use-case layer calls single repo operations that wrap one transaction each."
+      ],
+      "security_privacy": [
+        "Rollback paths must not log sensitive payloads."
+      ],
+      "edge_cases": [
+        "Nested transaction misuse should fail or no-op deterministically."
+      ],
+      "acceptance_criteria": [
+        "Transaction matrix exists and references RunInTx usage.",
+        "Critical workflows use shared transaction helper at repo layer."
+      ],
+      "test_plan": [
+        "Unit tests for RunInTx success, rollback, panic recovery."
+      ],
+      "deliverables": [
+        "docs/transaction-matrix.md",
+        "internal/db/tx.go"
+      ],
+      "estimate_points": 5,
+      "priority": "P0"
+    },
+    {
+      "id": "K-02",
+      "category": "CAT-K",
+      "title": "Rollback-focused integration tests for invoice and time-entry flows",
+      "description": "Postgres integration tests inject failures mid-transaction and assert no partial writes remain.",
+      "scope": [
+        "Tests for time entry submit, invoice generation, and invoice send failure paths.",
+        "CI provides DATABASE_URL and migrations for integrationtest package."
+      ],
+      "out_of_scope": [
+        "Chaos engineering across regions."
+      ],
+      "dependencies": [
+        "K-01"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": [
+          "time_entries",
+          "invoices",
+          "invoice_line_items",
+          "ledger_entries"
+        ]
+      },
+      "implementation_notes": [
+        "Prefer triggers or controlled injection in Postgres over sqlmock for rollback guarantees."
+      ],
+      "security_privacy": [
+        "Tests use synthetic tenants and emails only."
+      ],
+      "edge_cases": [
+        "Sequence allocation rollback behavior documented if applicable."
+      ],
+      "acceptance_criteria": [
+        "Integration tests fail if partial rows persist after injected errors.",
+        "go test ./... runs them in CI with Postgres service."
+      ],
+      "test_plan": [
+        "go test ./internal/integrationtest/... with migrated database."
+      ],
+      "deliverables": [
+        "internal/integrationtest/rollback_test.go",
+        "CI workflow updates"
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "K-03",
+      "category": "CAT-K",
+      "title": "Route-level RED metrics and business workflow conflict counters",
+      "description": "Expose stable http_requests_total with status_class labels and business_workflow_conflict_total for invoice and time-entry conflicts.",
+      "scope": [
+        "Refine HTTP RED metrics in observability middleware.",
+        "Increment conflict counters on 409 workflow outcomes.",
+        "Document PromQL examples in runbook."
+      ],
+      "out_of_scope": [
+        "Building hosted Grafana dashboards in-repo."
+      ],
+      "dependencies": [
+        "K-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/metrics"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Keep label cardinality low; never label by tenant or user id."
+      ],
+      "security_privacy": [
+        "Metrics must not include secrets or PII."
+      ],
+      "edge_cases": [
+        "Unmatched routes still get stable route label."
+      ],
+      "acceptance_criteria": [
+        "RED-style labels documented; conflict counters exported for critical workflows."
+      ],
+      "test_plan": [
+        "Unit tests for status_class; integration scrape of /metrics."
+      ],
+      "deliverables": [
+        "internal/httpapi/metrics_workflow.go",
+        "Runbook PromQL section"
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "K-04",
+      "category": "CAT-K",
+      "title": "Structured logging field contract and worker correlation IDs",
+      "description": "Document logging fields; add correlation_id to webhook and retention workers; enrich panic logs with route.",
+      "scope": [
+        "docs/logging.md field contract.",
+        "slog JSON for workers with component and correlation_id."
+      ],
+      "out_of_scope": [
+        "Replacing the global logging library."
+      ],
+      "dependencies": [
+        "K-03"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Reuse request_id from middleware for HTTP; generate per-poll correlation for workers."
+      ],
+      "security_privacy": [
+        "Never log tokens or Authorization headers."
+      ],
+      "edge_cases": [
+        "Background work without HTTP request still has a correlation key."
+      ],
+      "acceptance_criteria": [
+        "Critical paths documented; workers emit structured JSON with correlation_id."
+      ],
+      "test_plan": [
+        "Regression on log redaction tests if present."
+      ],
+      "deliverables": [
+        "docs/logging.md",
+        "webhookworker and retention structured logs"
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "K-05",
+      "category": "CAT-K",
+      "title": "Operability runbook updates for transactions and incidents",
+      "description": "Expand runbook with transaction triage, metrics to check, and PR verification checklist for operability changes.",
+      "scope": [
+        "Incident steps for rollback anomalies and stuck workflows.",
+        "Link transaction matrix to tests; local PR checklist."
+      ],
+      "out_of_scope": [
+        "On-call rotation policy."
+      ],
+      "dependencies": [
+        "K-04"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "Reference make targets and migrate commands."
+      ],
+      "security_privacy": [
+        "Examples use synthetic data only."
+      ],
+      "edge_cases": [],
+      "acceptance_criteria": [
+        "Runbook is concise and command-oriented; links to metrics and matrix."
+      ],
+      "test_plan": [
+        "Manual review of runbook accuracy."
+      ],
+      "deliverables": [
+        "docs/runbook.md updates",
+        "README links"
+      ],
+      "estimate_points": 3,
+      "priority": "P1"
+    },
+    {
+      "id": "L-01",
+      "category": "CAT-L",
+      "title": "Stripe webhook processing map and typed failure metrics",
+      "description": "Document each Stripe event type handled, outcomes, and emit low-cardinality counters for success, retry, and permanent failure paths.",
+      "scope": [
+        "Add docs/stripe-webhook-matrix.md mapping event types to handlers and ledger effects.",
+        "Export Prometheus counters for webhook processing outcomes (labels: event_category, outcome).",
+        "Wire increments in webhookworker processing path without logging secrets."
+      ],
+      "out_of_scope": [
+        "Supporting every Stripe event type in the catalog."
+      ],
+      "dependencies": [
+        "K-05"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/webhooks/stripe"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "webhook_events",
+          "ledger_entries",
+          "invoices"
+        ]
+      },
+      "implementation_notes": [
+        "Align metric names with existing /metrics conventions; keep labels bounded."
+      ],
+      "security_privacy": [
+        "Never increment metrics with raw event ids as labels; no card data in logs."
+      ],
+      "edge_cases": [
+        "Unknown event types bucket to a single outcome label."
+      ],
+      "acceptance_criteria": [
+        "Matrix doc exists and matches code paths.",
+        "At least one new outcome counter series is visible on /metrics after tests."
+      ],
+      "test_plan": [
+        "Unit tests for metric label bucketing; optional scrape test."
+      ],
+      "deliverables": [
+        "docs/stripe-webhook-matrix.md",
+        "Webhook metrics in internal/webhookworker or httpapi"
+      ],
+      "estimate_points": 5,
+      "priority": "P1"
+    },
+    {
+      "id": "L-02",
+      "category": "CAT-L",
+      "title": "Idempotent payment-link and invoice payment mutations",
+      "description": "Ensure duplicate client requests for payment link creation or payment-state transitions do not double-charge or corrupt state.",
+      "scope": [
+        "Define idempotency strategy (request key header and/or natural keys) for payment-link endpoints.",
+        "Repository-level guards for duplicate Stripe payment link creation per invoice when already pending or paid.",
+        "Typed conflict responses preserved for API consumers."
+      ],
+      "out_of_scope": [
+        "Stripe Connect or multi-party payouts."
+      ],
+      "dependencies": [
+        "L-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/invoices/{invoiceID}/payment-link"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "invoices",
+          "payments"
+        ]
+      },
+      "implementation_notes": [
+        "Prefer existing invoice state machine; use use-case layer for orchestration."
+      ],
+      "security_privacy": [
+        "Idempotency keys are opaque hashes in logs, not raw client secrets."
+      ],
+      "edge_cases": [
+        "Concurrent duplicate POSTs return same outcome or deterministic conflict."
+      ],
+      "acceptance_criteria": [
+        "Tests prove duplicate submissions do not create duplicate Stripe resources inappropriately.",
+        "OpenAPI documents optional Idempotency-Key where implemented."
+      ],
+      "test_plan": [
+        "Concurrency or replay tests at repo/use-case layer."
+      ],
+      "deliverables": [
+        "Idempotent payment-link behavior",
+        "docs/openapi.yaml updates"
+      ],
+      "estimate_points": 8,
+      "priority": "P0"
+    },
+    {
+      "id": "L-03",
+      "category": "CAT-L",
+      "title": "Reconciliation health checks and ledger alignment assertions",
+      "description": "Add read-only checks that Stripe-reported amounts align with invoice and ledger rows for a tenant scope.",
+      "scope": [
+        "Define reconciliation query or job that flags drift between invoices/payments and ledger_entries for Stripe-backed events.",
+        "Expose a protected internal or admin-only summary endpoint or CLI output for operators.",
+        "Document interpretation in runbook."
+      ],
+      "out_of_scope": [
+        "Automatic money movement or Stripe refunds from this job."
+      ],
+      "dependencies": [
+        "L-02"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/v1/admin/reconciliation-summary"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "ledger_entries",
+          "invoices",
+          "payments",
+          "webhook_events"
+        ]
+      },
+      "implementation_notes": [
+        "Scope by organization_id; read-only SQL; suitable for cron."
+      ],
+      "security_privacy": [
+        "Admin or owner role only; no raw Stripe objects in responses."
+      ],
+      "edge_cases": [
+        "Partial webhook backlog should not false-positive critical alerts without tuning."
+      ],
+      "acceptance_criteria": [
+        "Drift detection logic covered by tests with synthetic fixtures.",
+        "Runbook explains how to respond to reported drift."
+      ],
+      "test_plan": [
+        "Repo or integration tests with seeded rows."
+      ],
+      "deliverables": [
+        "Reconciliation check implementation",
+        "Runbook section"
+      ],
+      "estimate_points": 8,
+      "priority": "P1"
+    },
+    {
+      "id": "L-04",
+      "category": "CAT-L",
+      "title": "Stripe webhook integration test suite with fixture replay",
+      "description": "Add tests that replay signed or test-mode Stripe event payloads against the webhook handler to prevent regressions.",
+      "scope": [
+        "Golden JSON fixtures for primary event types (payment success, failure, dispute if supported).",
+        "Tests exercise signature validation path and persistence to webhook_events plus downstream processing hooks.",
+        "CI runs tests without live Stripe network calls."
+      ],
+      "out_of_scope": [
+        "Load testing Stripe endpoints."
+      ],
+      "dependencies": [
+        "L-01"
+      ],
+      "api_contract": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/webhooks/stripe"
+          }
+        ]
+      },
+      "data_contract": {
+        "tables": [
+          "webhook_events"
+        ]
+      },
+      "implementation_notes": [
+        "Use Stripe test secrets from env in CI only via secrets; default skip without credentials if needed."
+      ],
+      "security_privacy": [
+        "Fixtures contain no real customer data."
+      ],
+      "edge_cases": [
+        "Clock skew and replay idempotency covered at least once."
+      ],
+      "acceptance_criteria": [
+        "At least three event types covered by fixture tests.",
+        "go test ./... passes in CI."
+      ],
+      "test_plan": [
+        "httptest against webhook handler with synthetic signatures."
+      ],
+      "deliverables": [
+        "internal/webhookworker or httpapi test fixtures",
+        "Test helper for signing"
+      ],
+      "estimate_points": 8,
+      "priority": "P1"
+    },
+    {
+      "id": "L-05",
+      "category": "CAT-L",
+      "title": "OpenAPI and showcase documentation for payment surfaces",
+      "description": "Keep docs/openapi.yaml and README aligned with Stripe webhook, payment link, and reconciliation endpoints added in Epic L.",
+      "scope": [
+        "Update OpenAPI for any new or changed routes in L-02 and L-03.",
+        "README quick-start for testing webhooks locally (stripe CLI or documented tunnel).",
+        "Cross-link stripe-webhook-matrix and threat model where relevant."
+      ],
+      "out_of_scope": [
+        "Public marketing site."
+      ],
+      "dependencies": [
+        "L-03",
+        "L-04"
+      ],
+      "api_contract": {
+        "endpoints": []
+      },
+      "data_contract": {
+        "tables": []
+      },
+      "implementation_notes": [
+        "CI openapi-spec-validator must pass."
+      ],
+      "security_privacy": [
+        "Document that webhook secrets stay in environment variables."
+      ],
+      "edge_cases": [],
+      "acceptance_criteria": [
+        "OpenAPI validates in CI; README steps are copy-pasteable."
+      ],
+      "test_plan": [
+        "make openapi-validate or CI schema-validate job."
+      ],
+      "deliverables": [
+        "docs/openapi.yaml",
+        "README updates"
+      ],
+      "estimate_points": 3,
+      "priority": "P2"
     }
   ],
   "phases": [
@@ -392,6 +893,28 @@
         "J-03",
         "J-04",
         "J-05"
+      ]
+    },
+    {
+      "id": "PHASE-6",
+      "name": "Transactional Integrity and Operability",
+      "story_ids": [
+        "K-01",
+        "K-02",
+        "K-03",
+        "K-04",
+        "K-05"
+      ]
+    },
+    {
+      "id": "PHASE-7",
+      "name": "Stripe Integration and Payment Reliability",
+      "story_ids": [
+        "L-01",
+        "L-02",
+        "L-03",
+        "L-04",
+        "L-05"
       ]
     }
   ]
