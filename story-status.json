@@ -415,6 +415,51 @@
       "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/40",
       "last_updated": "2026-04-19T12:00:00Z",
       "notes": "Merged with all required checks green."
+    },
+    {
+      "story_id": "L-01",
+      "status": "done",
+      "owner": "agent",
+      "branch": "main",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/47",
+      "last_updated": "2026-04-21T06:00:00Z",
+      "notes": "Epic L: merged with L-02 in PR #47."
+    },
+    {
+      "story_id": "L-02",
+      "status": "done",
+      "owner": "agent",
+      "branch": "main",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/47",
+      "last_updated": "2026-04-21T06:00:00Z",
+      "notes": "Epic L: merged with L-01 in PR #47."
+    },
+    {
+      "story_id": "L-03",
+      "status": "done",
+      "owner": "agent",
+      "branch": "main",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/48",
+      "last_updated": "2026-04-21T06:00:00Z",
+      "notes": "Epic L: merged with L-04 in PR #48."
+    },
+    {
+      "story_id": "L-04",
+      "status": "done",
+      "owner": "agent",
+      "branch": "main",
+      "pr_url": "https://github.com/jparrott06/consulting-revenue-platform-api/pull/48",
+      "last_updated": "2026-04-21T06:00:00Z",
+      "notes": "Epic L: merged with L-03 in PR #48."
+    },
+    {
+      "story_id": "L-05",
+      "status": "in_review",
+      "owner": "agent",
+      "branch": "feat/L-05-epic-l-docs",
+      "pr_url": "",
+      "last_updated": "2026-04-21T06:00:00Z",
+      "notes": "OpenAPI + README + .env.example for Epic L; PR pending."
     }
   ]
 }
