@@ -145,6 +145,51 @@ Before merging changes that touch workflows, metrics, or logging:
 - Compatibility/deprecation policy for API changes: [api-compatibility.md](api-compatibility.md).
 - For API-touching PRs, include: compatibility class (additive/behavior-changing/breaking), updated OpenAPI, and migration notes when behavior changes.
 
+### API governance checklist (contract changes)
+
+Use this checklist for any PR that changes routes, request/response fields, status codes, or error envelopes.
+
+1. Update `docs/openapi.yaml` in the same PR as runtime code changes.
+2. Run parity and contract checks locally:
+   - `go test ./internal/httpapi -run TestOpenAPIRouteCoverage -count=1`
+   - `go test ./internal/httpapi -run TestOpenAPIContract -count=1`
+3. Classify compatibility impact in the PR body (`Classification: additive|behavior-changing|breaking`).
+4. If classification is `breaking`, do not merge until explicit approval is granted (`api-breaking-approved` label) and deprecation/migration notes are present.
+5. Add consumer communication notes in PR Summary/Risks (what changed, who is impacted, migration timing).
+6. Verify docs/README/runbook updates when contributor behavior or operating steps changed.
+
+### Release readiness command sequence (copy/paste)
+
+```bash
+make openapi-validate
+bash scripts/openapi-change-gate.sh
+go test ./internal/httpapi -run TestOpenAPIRouteCoverage -count=1
+go test ./internal/httpapi -run TestOpenAPIContract -count=1
+go test ./...
+go test -race ./...
+go vet ./...
+```
+
+If OpenAPI tests are temporarily flaky or unavailable in local tooling, document:
+- exact failing command/output,
+- why CI is still expected to validate safety, and
+- the follow-up owner/date for stabilization.
+
+### Governance examples
+
+- **Acceptable additive change:** add optional response field `payment_reference` while keeping existing fields/status codes unchanged and documenting it in OpenAPI.
+- **Behavior-changing change:** same schema, but stricter validation rejects values previously accepted; requires explicit migration note.
+- **Forbidden unannounced breaking change:** remove/rename a required response field or change a `2xx` route to `4xx/5xx` behavior without classification, approval, and rollout notes.
+
+### Emergency exception handling
+
+For urgent security or incident fixes that require temporary policy exceptions:
+
+1. Classify as `breaking` in PR body even under urgency.
+2. Capture incident context and temporary exception rationale in PR Summary/Risks.
+3. Apply explicit approval (`api-breaking-approved`) before merge.
+4. Create immediate follow-up tasks for customer communication and long-term compatibility restoration.
+
 ## References
 
 - [Threat model](threat-model.md)
