@@ -94,7 +94,7 @@ make run
 **API change policy:** Any API-touching PR must follow [docs/api-compatibility.md](docs/api-compatibility.md) for compatibility classification, OpenAPI updates, and deprecation handling.
 See the contributor runbook workflow: [docs/runbook.md#api-governance-checklist-contract-changes](docs/runbook.md#api-governance-checklist-contract-changes).
 
-**End-to-end API demo:** With Postgres migrated and the server listening (e.g. `http://localhost:8080`), run `make demo-api` or `./scripts/demo-api.sh` (requires `curl` and `jq`). The script registers an owner and contractor, creates client/project, runs submit → approve → generate → send invoice, and prints JSON along the way. Override the base URL with `BASE_URL=https://... ./scripts/demo-api.sh`.
+**End-to-end API demo:** With Postgres migrated and the server listening (e.g. `http://localhost:8080`), run `make demo-api` or `./scripts/demo-api.sh` (requires `curl` and `jq`). The script now enforces assertions for critical workflow transitions, exits non-zero on mismatches, and writes a machine-readable summary report (default `./tmp/demo-api-report.json`). Optional isolation mode: `./scripts/demo-api.sh --cleanup` deactivates the synthetic org at the end.
 
 ## Intended V1 Product Scope
 
