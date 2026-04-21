@@ -13,6 +13,10 @@ import (
 
 func main() {
 	reset := flag.Bool("reset", false, "remove demo organization data before seeding (fails if ledger_entries exist for the demo org)")
+	preset := flag.String("preset", seed.PresetHappyPath, "seed preset: minimal|happy-path|conflict-path")
+	contractors := flag.Int("contractors", 1, "number of deterministic contractor users to seed")
+	seedSubmitted := flag.Bool("seed-submitted-time", false, "pre-stage seeded time entry in submitted state")
+	seedApproved := flag.Bool("seed-approved-time", false, "pre-stage seeded time entry in approved state (implies submitted)")
 	flag.Parse()
 
 	cfg, err := config.Load()
@@ -37,10 +41,16 @@ func main() {
 		log.Printf("reset demo organization %s", seed.DemoOrganizationID)
 	}
 
-	if err := seed.ApplyDemoSeed(ctx, pool); err != nil {
+	opts := seed.SeedOptions{
+		Preset:            *preset,
+		ContractorCount:   *contractors,
+		SeedSubmittedTime: *seedSubmitted,
+		SeedApprovedTime:  *seedApproved,
+	}
+	if err := seed.ApplyDemoSeedWithOptions(ctx, pool, opts); err != nil {
 		log.Fatalf("seed: %v", err)
 	}
-	log.Printf("demo seed applied (org=%s user=%s login=%s password=%s)",
-		seed.DemoOrganizationID, seed.DemoOwnerUserID, "owner@demo.local", "DemoPass1!")
+	log.Printf("demo seed applied (org=%s owner=%s login=%s password=%s preset=%s contractors=%d submitted=%t approved=%t)",
+		seed.DemoOrganizationID, seed.DemoOwnerUserID, "owner@demo.local", "DemoPass1!", *preset, *contractors, *seedSubmitted || *seedApproved, *seedApproved)
 	os.Exit(0)
 }
